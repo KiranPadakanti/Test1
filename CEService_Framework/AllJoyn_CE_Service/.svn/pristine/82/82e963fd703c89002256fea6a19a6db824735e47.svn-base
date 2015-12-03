@@ -1,0 +1,25 @@
+/****************************************************************************
+ *
+ * Copyright 2008-2013, Silicon Image, Inc.  All rights reserved.
+ * No part of this work may be reproduced, modified, distributed, transmitted,
+ * transcribed, or translated into any language or computer format, in any form
+ * or by any means without written permission of: Silicon Image, Inc., 1060
+ * East Arques Avenue, Sunnyvale, California 94085
+ *
+ ******************************************************************************/
+
+#ifndef SII_INLINE_H
+#define SII_INLINE_H
+#ifdef WIN32
+#define SII_INLINE _inline
+#else
+#ifndef SII_INLINE
+#  if defined(__GNUC__)
+#    define SII_INLINE __inline__
+#  else
+#    define SII_INLINE inline
+#  endif /* __GNUC__ */
+#endif /* SII_INLINE */
+#endif /* WIN32 */
+#endif /*SII_INLINE_H*/
+

@@ -1,0 +1,508 @@
+#include <stdio.h>
+#include <signal.h>
+#include <set>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <iomanip>
+
+#include <alljoyn/about/AnnouncementRegistrar.h>
+#include <alljoyn/ce/CEClient.h>
+#include "CEClientNotifyHandler.h"
+#include <alljoyn/ce/CEKeyCodes.h>
+#include <alljoyn/ce/NotificationRegistrar.h>
+#include <alljoyn/ce/SessionListener.h>
+
+#include <AnnounceHandlerImpl.h>
+#include <alljoyn/services_common/LogModulesNames.h>
+
+using namespace ajn;
+using namespace services;
+using namespace ce;
+
+static BusAttachment* busAttachment = 0;
+static std::set<qcc::String> handledAnnouncements;
+typedef std::map<qcc::String, ajn::SessionId> TStrIdMap;
+typedef std::pair<qcc::String, ajn::SessionId> TStrIdPair;
+TStrIdMap appList;
+
+typedef std::map<qcc::String, TStrIdPair> TStrAppMap;
+typedef std::pair<qcc::String, TStrIdPair> TStrAppPair;
+TStrAppMap remoteAppList;
+bool retMenu = false;
+SessionListenerImpl* sessionListnr;
+
+void DeviceSelection(void)
+{
+	char usrInput[80] = { 0 };
+	QStatus status;
+	uint32_t nDevicesFound = 0;
+	qcc::String appName;
+	int index = 0;
+	uint8_t content[32] = { 0 };
+	size_t contentSize;
+	CEKeyCodes obj;
+	CEClient* ceClient = NULL;
+	ceClient = new CEClient(*busAttachment);
+	std::set<unsigned int> keys;
+
+	devSelection: while (1)
+	{
+		keys.clear();
+		nDevicesFound = 0;
+		std::cout << "Select device from list , x for previous menu"
+				<< std::endl;
+		std::cout << "\t-------------------------------------------"
+				<< std::endl;
+		nDevicesFound = 0;
+		for (TStrAppMap::iterator i = remoteAppList.begin();
+				i != remoteAppList.end(); i++)
+		{
+			appName = i->first;
+			++nDevicesFound;
+			std::cout << "\t|" << nDevicesFound << ") " << appName.c_str()
+					<< std::endl;
+
+		}
+		if (nDevicesFound == 0)
+		{
+			std::cout << "There are no devices in the list" << std::endl;
+			retMenu = true;
+			return;
+		}
+		std::cout << "\t|u) Up to previous menu" << std::endl;
+		std::cout << "\t-------------------------------------------"
+				<< std::endl;
+		fgets(usrInput, sizeof(usrInput), stdin);
+
+		if (usrInput[0] == '\n')
+		{
+			continue;
+		}
+		else
+		{
+			index = atoi(usrInput);
+
+			if (index > 0)
+			{
+				/* Convert string to currDevId */
+				TStrAppMap::iterator i = remoteAppList.begin();
+				if ((unsigned int) index <= remoteAppList.size())
+				{
+					std::advance(i, index - 1);
+					appName = i->first;
+					std::cout << "Device/App selected is " << appName.c_str()
+							<< std::endl;
+					TStrIdPair tempIdPair = (TStrIdPair) i->second;
+					qcc::String busName = tempIdPair.first;
+					ajn::SessionId id = tempIdPair.second;
+
+					//get KSUPP
+
+					status = ceClient->GetKSUP(busName.c_str(), content,
+							contentSize, id);
+					if (status != ER_OK)
+					{
+						std::cout << "Call to GetKSUP failed: "
+								<< QCC_StatusText(status) << std::endl;
+						return;
+					}
+					else
+					{ /*
+					 std::cout << std::endl <<"KSUP for "<< appName.c_str() << std::endl;
+					 std::cout << "----------------------------------------------------------"
+					 << std::endl;
+					 std::cout << "Content size=" << contentSize << std::endl;
+					 std::cout << "Content :\t";
+					 for (size_t i = 0; i < contentSize; i++)
+					 {
+					 if (i % 8 == 0 && i > 0)
+					 {
+					 std::cout << "\n\t\t";
+					 }
+					 std::cout << std::hex << std::uppercase
+					 << std::setfill('0') << std::setw(2)
+					 << (unsigned int) content[i] << std::nouppercase
+					 << std::dec;
+					 }
+					 std::cout << std::endl;
+					 std::cout << "----------------------------------------------------------"
+					 << std::endl; */
+					}
+
+					obj = CEKeyCodes();
+					obj.getKeyListfromKSUP(content, &keys);
+					break;
+				}
+				else
+				{
+					std::cout << "Invalid selection" << std::endl;
+				}
+			}
+			else
+			{
+				if (usrInput[0] == 'u' || usrInput[0] == 'U')
+				{
+					retMenu = true;
+					return;
+				}
+				else
+				{
+					std::cout << "Invalid selection" << std::endl;
+				}
+			}
+		}
+	}
+
+	while (1)
+	{
+
+		TStrAppMap::iterator itr = remoteAppList.find(qcc::String(appName));
+		if (itr == remoteAppList.end())
+		{
+			goto devSelection;
+		}
+
+		TStrIdPair tempIdPair = (TStrIdPair) itr->second;
+		qcc::String busName = tempIdPair.first;
+		ajn::SessionId id = tempIdPair.second;
+
+		std::cout << std::endl << "Supported Commands" << std::endl;
+		std::cout << "\t-------------------------------------------"
+				<< std::endl;
+		unsigned int count = 0;
+		qcc::String keyString;
+		for (std::set<unsigned int>::iterator it = keys.begin();
+				it != keys.end(); ++it)
+		{
+			count++;
+			keyString = obj.CEKeycodeString((CEKeyCodes::keys) *it);
+			std::cout << "\t|" << count << ") " << keyString.c_str() << "\t "
+					<< std::endl;
+
+		}
+		std::cout << "\t|u) Up to previous menu" << std::endl;
+		std::cout << "\t|x) Main menu" << std::endl;
+		std::cout << "\t-------------------------------------------"
+				<< std::endl;
+
+		fgets(usrInput, sizeof(usrInput), stdin);
+
+		itr = remoteAppList.find(qcc::String(appName));
+		if (itr == remoteAppList.end())
+		{
+			goto devSelection;
+		}
+		int j = 0, input = 0;
+
+		input = atoi(usrInput);
+		switch (usrInput[0])
+		{
+			case 'u':
+			case 'U':
+				goto devSelection;
+			case 'x':
+			case 'X':
+				retMenu = true;
+				break;
+			default:
+				bool found = 0;
+				std::set<unsigned int>::iterator it;
+				for (it = keys.begin(); it != keys.end(); it++)
+				{
+					++j;
+					if (input == j)
+					{
+						/* Send Key */
+						if ((status = ceClient->SendCECommand(busName.c_str(),
+								*it, id)) == ER_OK)
+						{
+							keyString = obj.CEKeycodeString(
+									(CEKeyCodes::keys) *it);
+							std::cout << "Success SendCECommand. Command="
+									<< keyString.c_str() << std::endl;
+							found = 1;
+						}
+						else
+						{
+							std::cout << "Call to SendCECommand failed: "
+									<< QCC_StatusText(status) << std::endl;
+						}
+					}
+				}
+				if (!found)
+				{
+					std::cout << "Invalid selection" << std::endl;
+				}
+
+				break;
+		}
+
+		if (retMenu == true)
+		{
+			break;
+		}
+
+	}
+
+	return;
+}
+
+void sessionLostCallback(ajn::SessionId sessionId,
+		ajn::SessionListener::SessionLostReason reason)
+{
+	qcc::String app;
+
+	for (TStrIdMap::iterator it = appList.begin(); it != appList.end(); ++it)
+	{
+		if (it->second == sessionId)
+		{
+			appList.erase(it);
+		}
+	}
+	for (TStrAppMap::iterator it = remoteAppList.begin();
+			it != remoteAppList.end(); ++it)
+	{
+		TStrIdPair tempIdPair = (TStrIdPair) it->second;
+
+		if (tempIdPair.second == sessionId)
+		{
+			remoteAppList.erase(it);
+			app = it->first;
+
+		}
+
+	}
+
+	std::cout << app.c_str() << " lost from network,removed from list"
+			<< std::endl;
+}
+
+void sessionJoinedCallback(qcc::String const& busName, SessionId id)
+{
+	QStatus status = ER_OK;
+
+	TStrIdMap::iterator searchIterator = appList.find(qcc::String(busName));
+	if (searchIterator == appList.end())
+	{
+		//Adding busName to List
+		appList.insert(TStrIdPair(busName, id));
+		busAttachment->EnableConcurrentCallbacks();
+		AboutClient* aboutClient = new AboutClient(*busAttachment);
+		if (aboutClient)
+		{
+			//Adding App to List
+			AboutClient::AboutData aboutDataRefill;
+			status = aboutClient->GetAboutData(busName.c_str(), NULL,
+					aboutDataRefill);
+			if (status != ER_OK)
+			{
+				std::cout << "Call to getAboutData failed: "
+						<< QCC_StatusText(status) << std::endl;
+			}
+			else
+			{
+				AboutClient::AboutData::iterator search = aboutDataRefill.find(
+						"AppName");
+				if (search != aboutDataRefill.end())
+				{
+					qcc::String key = search->first;
+					ajn::MsgArg value = search->second;
+					if (value.typeId == ALLJOYN_STRING)
+					{
+						std::cout << "-----------------------------------"
+								<< std::endl;
+						std::cout << "Adding " << value.v_string.str
+								<< " App to List" << std::endl;
+						std::cout << "-----------------------------------"
+								<< std::endl;
+
+						remoteAppList.insert(
+								TStrAppPair(value.v_string.str,
+										TStrIdPair(busName, id)));
+					}
+				}
+			}
+		} //if (aboutClient)
+
+		AboutIconClient* iconClient = new AboutIconClient(*busAttachment);
+		if (iconClient)
+		{
+			size_t contentSize = 0;
+			uint8_t*content = NULL;
+			status = iconClient->GetContent(busName.c_str(), &content,
+					contentSize, id);
+			std::ofstream outfile("output.png", std::ofstream::binary);
+			outfile.write((char *) content, contentSize);
+			outfile.close();
+		} //if (iconClient)
+	}
+	return;
+}
+
+void notifyHandlerCallback(qcc::String const& busName, unsigned int deviceType,
+		unsigned char* ksup)
+{
+//	std::cout << busName.c_str() << " ------ we are in  notifyHandlerCallback"
+//			<< std::endl;
+}
+void announceHandlerCallback(qcc::String const& busName, unsigned short version,
+		unsigned short port,
+		const ajn::services::AnnounceHandler::ObjectDescriptions& objectDescs,
+		const ajn::services::AnnounceHandler::AboutData& aboutData)
+{
+	std::set<qcc::String>::iterator searchIterator = handledAnnouncements.find(
+			qcc::String(busName));
+
+	if (searchIterator == handledAnnouncements.end())
+	{
+		handledAnnouncements.insert(busName);
+		AboutClient* aboutClient = new AboutClient(*busAttachment);
+		if (aboutClient)
+		{
+			qcc::String ceInterfacename;
+			ceInterfacename.assign("/CE");
+			AnnounceHandler::ObjectDescriptions::const_iterator itr =
+					objectDescs.find(qcc::String(ceInterfacename));
+			if (itr == objectDescs.end())
+			{
+				AnnounceHandler::AboutData::const_iterator search = aboutData.find(
+						"AppName");
+				if (search != aboutData.end())
+				{
+					qcc::String key = search->first;
+					ajn::MsgArg value = search->second;
+					if (value.typeId == ALLJOYN_STRING)
+					{
+
+						std::cout << "Not a CE Service App Ignoring:"
+								<< value.v_string.str << std::endl;
+
+					}
+				}
+
+				return;
+			}
+		}
+		else
+		{
+			return;
+		}
+
+		SessionOpts opts(SessionOpts::TRAFFIC_MESSAGES, false,
+				SessionOpts::PROXIMITY_ANY, TRANSPORT_ANY);
+		sessionListnr = new SessionListenerImpl(busName, sessionLostCallback);
+		AsyncSessionJoiner* joincb = new AsyncSessionJoiner(busName.c_str(),
+				sessionJoinedCallback);
+
+		QStatus status = busAttachment->JoinSessionAsync(busName.c_str(), port,
+				sessionListnr, opts, joincb, sessionListnr);
+
+		if (status != ER_OK)
+		{
+			std::cout << "Unable to JoinSession with " << busName.c_str()
+					<< std::endl;
+		}
+	}
+	else
+	{
+		std::cout << busName.c_str() << " has already been handled"
+				<< std::endl;
+	}
+}
+
+int main(int argc, char**argv, char**envArg)
+{
+	QStatus status = ER_OK;
+
+//	QCC_SetLogLevels("ALLJOYN_ABOUT_CLIENT=7");
+//	QCC_SetLogLevels("ALLJOYN_ABOUT_ICON_CLIENT=7");
+//	QCC_SetLogLevels("ALLJOYN_ABOUT_ANNOUNCE_HANDLER=7");
+//	QCC_SetDebugLevel(logModules::CE_MODULE_LOG_NAME,
+//			logModules::ALL_LOG_LEVELS);
+	char usrInput[80] = { 0 };
+
+	busAttachment = new BusAttachment("CEClient", true);
+
+	status = busAttachment->Start();
+	if (status == ER_OK)
+	{
+		//std::cout << "BusAttachment started." << std::endl;
+	}
+	else
+	{
+		std::cout << "Unable to start BusAttachment. Status: "
+				<< QCC_StatusText(status) << std::endl;
+		return 1;
+	}
+
+	status = busAttachment->Connect();
+	if (ER_OK == status)
+	{
+		//std::cout << "Daemon Connect succeeded." << std::endl;
+	}
+	else
+	{
+		std::cout << "Failed to connect daemon. Status: "
+				<< QCC_StatusText(status) << std::endl;
+		return 1;
+	}
+
+	CEClientNotifyHandler* notifyHandler = new CEClientNotifyHandler(
+			notifyHandlerCallback);
+	NotificationRegistrar::RegisterNotifyHandler(*busAttachment,
+			*notifyHandler);
+
+	AnnounceHandlerImpl* announceHandler = new AnnounceHandlerImpl(0,
+			announceHandlerCallback);
+	AnnouncementRegistrar::RegisterAnnounceHandler(*busAttachment,
+			*announceHandler);
+
+	busAttachment->AddMatch("sessionless='t',type='error'");
+
+	CEClient* ceClient = NULL;
+	ceClient = new CEClient(*busAttachment);
+
+	if (ceClient)
+	{
+		while (1)
+		{
+			std::cout << "\t----------------Main Menu-----------------"
+					<< std::endl;
+			std::cout << "\t|1) Device selection menu                 |"
+					<< std::endl;
+			std::cout << "\t|x) Exit                                  |"
+					<< std::endl;
+			std::cout << "\t------------------------------------------"
+					<< std::endl;
+			fgets(usrInput, sizeof(usrInput), stdin);
+			switch (usrInput[0])
+			{
+				case '1':
+					devSelMenu: DeviceSelection();
+					if (retMenu == true)
+						retMenu = false;
+					else
+						goto devSelMenu;
+					break;
+				case 'X':
+				case 'x':
+					goto end;
+					break;
+				default:
+					std::cout << std::endl << "Invalid Selection" << std::endl;
+					break;
+			}
+
+		}
+	}
+	end: AnnouncementRegistrar::UnRegisterAnnounceHandler(*busAttachment,
+			*announceHandler);
+
+	delete announceHandler;
+	delete ceClient;
+	busAttachment->Stop();
+	delete busAttachment;
+
+} /* main() */
+

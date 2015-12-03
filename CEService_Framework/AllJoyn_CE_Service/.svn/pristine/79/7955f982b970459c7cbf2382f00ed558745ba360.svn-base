@@ -1,0 +1,672 @@
+/******************************************************************************
+ *
+ * Copyright 2008-2013, Silicon Image, Inc.  All rights reserved.
+ * No part of this work may be reproduced, modified, distributed, transmitted,
+ * transcribed, or translated into any language or computer format, in any form
+ * or by any means without written permission of: Silicon Image, Inc., 1060
+ * East Arques Avenue, Sunnyvale, California 94085
+ *
+ *****************************************************************************/
+/**
+ * @file uda.h
+ *
+ * @brief Public API interface for UDA
+ *
+ * These are ULMUS Device Agent Public API's used to interact with ULMUS Core
+ *
+ *
+ *****************************************************************************/
+#ifndef _UDA_H
+#define _UDA_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** \defgroup UDA ULMUS Device Agent
+ * @{
+ * This provides the Public interface between Device main Firmware and ULMUS
+ */
+
+/** @brief UDA return codes */
+typedef enum
+{
+	/* Success */
+	/** successful */
+	UDA_STATUS_SUCCESS,
+
+	/* Errors */
+	/** unsuccessful */
+	UDA_STATUS_FAIL,
+	/** Invalid input parameter Passed */
+	UDA_STATUS_ERR_INVALID_PARAM,
+	/** authentication failed */
+	UDA_STATUS_AUTH_FAIL,
+	/** the user name or password was incorrect */
+	UDA_STATUS_LOGIN_FAIL,
+	/** Unable to reach ULMUS cloud */
+	UDA_STATUS_NO_CLOUD,
+	/** There is no logged in user */
+	UDA_STATUS_NOT_LOGGED_IN,
+	/** There is BAD check digit in use */
+	UDA_STATUS_ERR_BAD_CHK,
+	/** Device already registered with cloud */
+	UDA_STATUS_DEV_ALREADY_REG,
+	/** Device not registered */
+	UDA_STATUS_ERR_NOT_REGISTERED,
+	/** Web service request is pending */
+	UDA_STATUS_PENDING,
+	/** No config file */
+	UDA_STATUS_ERR_NO_CONFIG_FILE,
+	/** Missing config parameter */
+	UDA_STATUS_ERR_MISSING_CONFIG_PARAM,
+	/** Invalid config parameter */
+	UDA_STATUS_ERR_INVALID_CONIG_PARAM,
+	/** Buffer is empty */
+	UDA_STATUS_ERR_BUFFER_EMPTY,
+
+	/** LAST */
+	UDA_STATUS_LAST
+} UdaStatus_t;
+
+/** @brief Cloud return codes returned in UDA API code parameter */
+typedef enum
+{
+	/** General Return Codes */
+	CLOUD_STATUS_ERR_FAILED = 1001,
+	CLOUD_STATUS_ERR_INVALID_REG_KEY,
+	CLOUD_STATUS_ERR_INVALID_JSON_FORMAT = 1004,
+	CLOUD_STATUS_ERR_FIELD_EMPTY,
+	CLOUD_STATUS_ERR_INVALID_MODEL_GRP,
+
+	/** Registration Return Codes */
+	CLOUD_STATUS_DEV_REG_SUCCESS = 2001,
+	CLOUD_STATUS_DEV_ALREADY_REG,
+	CLOUD_STATUS_ERR_EULA_NOT_ACCEPTED,
+	CLOUD_STATUS_ERR_INVALID_REG_KEY_FOR_MODEL_GRP = 2013,
+
+	/** De-Registration Return Codes */
+	CLOUD_STATUS_DEV_DEREG_SUCCESS = 2006,
+	CLOUD_STATUS_DEV_ALREADY_DEREG,
+
+	/** De-Registration, Device data update, Device data retrieval */
+	CLOUD_STATUS_ERR_DEV_NOT_FOUND = 2009,
+
+	/** Upload Return Codes */
+	CLOUD_STATUS_UPLOAD_SUCCESS = 3001,
+	CLOUD_STATUS_ERR_UPLOAD_NOT_ALLOWED,
+
+	/** Device data retrieval Return Codes */
+	CLOUD_STATUS_DEV_DATA_RETRIEVAL_SUCCESS = 4001,
+
+	/** Get EULA Return Codes */
+	CLOUD_STATUS_GET_EULA_SUCCESS = 8001,
+	CLOUD_STATUS_ERR_EULA_NOT_AVAIL = 8003,
+
+	/** Device data update Return Codes */
+	CLOUD_STATUS_DEV_DATA_UPDATE_SUCCESS = 9001,
+
+	/** LAST */
+	CLOUD_STATUS_LAST
+} UdaCloudStatus_t;
+
+/** @brief UdaDeviceID_t is the globally unique 64 bit number based on either
+ * MAC address or vendor ID, used to uniquely identify ULMUS devices.
+ */
+typedef uint64_t UdaDeviceID_t;
+
+/**
+ *  @name User Notifications
+ *  @{
+ **/
+/*****************************************************************************/
+/**
+ *  @brief  The Notification Callback is a function, passed from the firmware
+ *  to the UDA at initialization time via UdaInit(), which is called when
+ *  the ULMUS cloud wants to notify the user of something.  It has the option
+ *  to ask a question and return the response to the cloud. The user may not
+ *  be available when the callback is called, in which case it should block
+ *  until the user sees the notification or question and there are
+ *  2 modes of operation:
+ *  	1. Notification mode
+ *  	2. Question mode
+ *
+ *  @param[in]	msgID				 Unique message sequence number,
+ *  								 assigned by cloud, used to associate response with message.
+ *  @param[in]	message 			 An optional message to be displayed to the user.
+ *  @param[in]	question 			 An optional 2nd message, and question to be asked.
+ *  @param[in]	expectResponse 		 If true, the device should wait for a response
+ *  								 from the user and return it to the UDA, to be returned to the cloud.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *  @retval 	UDA_STATUS_ERR_NO_RESPONSE		No response. User responded with
+ *  											ESC, Cancel, or some other response
+ *  											without answering the question.
+ *
+ *****************************************************************************/
+typedef void (UdaNotificationCallback_t)(int msgID, char *message,
+		char *question, bool_t expectResponse);
+
+/*****************************************************************************/
+/**
+ *  @brief  The Error Callback is a function, passed from the firmware to the UDA
+ *  at initialization time via UdaInit(), which is called when there is an error
+ *  communicating with the ULMUS cloud.  It is called with a UDA error code, an
+ *  optional cloud error code, and two optional error messages translated by the
+ *  cloud into the user's language.
+ *  This callback function will normally be called when the UDA attempts to call
+ *  a web service from a background thread and fails.
+ *  If an error calling a web service is encountered during the execution of a
+ *  UDA API call, the error code and messages will be returned as output parameters
+ *  from the UDA API call instead of via this callback.
+ *
+ *  @param[in]	UdacloudError	Cloud Error Code.
+ *  @param[in]	message 		If non-NULL, an optional message describing the result
+ *  		of the operation. This message is returned from an ULMUS web API, and is in
+ *  		the language passed to UdaInit().
+ *  @param[in]	description 	If non-NULL, an optional more detailed description of
+ *  		the message.  Description is returned from the an ULMUS web API, and is in
+ *  		the language passed to UdaInit().
+ *  @param[in]	expectResponse 	code describing status of operation. This code is defined
+ *  		by the ULMUS web API.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *  @retval 	UDA_STATUS_ERR_NO_RESPONSE		No response. User responded with
+ *  											ESC, Cancel, or some other response
+ *  											without answering the question.
+ *
+ *****************************************************************************/
+typedef void (UdaErrorCallback_t)(UdaCloudStatus_t UdaCloudError,
+		const char *message, const char *description);
+
+/** @}*//* User Notifications */
+
+/**
+ *  @name Configuration and Initialization
+ *  @{
+ **/
+/*****************************************************************************/
+/**
+ *  @brief This initializes data structures and tasks required for ULMUS Core.
+ *
+ *  This function initializes the ULMUS Device Agent, passing default settings to it.
+ *  It takes a notification callback function, used to display messages from
+ *  the ULMUS cloud to the user, and a set of credentials used to authenticate
+ *  the UDA as a valid ULMUS device.
+ *
+ *  This function is required to be the first ULMUS function called.
+ *  It must be called before ULMUS can begin data collection.
+ *
+ *  @param[in]	deviceID	The globally unique device ID of the local device,
+ *  						based on MAC address or vendor ID.
+ *  @param[in]	modelGroup	The Model group number of the device, which is a
+ *  						unique number allocated by the ULMUS cloud when the
+ *  						model information is pre-registered.  This is compiled
+ *  						into the device firmware, and passed to the UDA at initialization.
+ *  @param[in] notificationCallback
+ *  						Vendor supplied callback function, to be called when
+ *  						the ULMUS cloud wants to notify or question the owner in
+ *  						possession of a device.  If NULL it won't be called, and
+ *  						any messages to the UDA to be displayed to the user will
+ *  						return status to the cloud indicating unable to display.
+ *  						This will prevent web registration from being finalized.
+ *  @param[in] errorCallback
+ *  						Vender supplied callback function. UDA notify the
+ *  						firmware/application about the pending
+ *  						registration/de-registration/upload status through this callback.
+ *  @param[in] deviceCertBuffer
+ *  						Pointer to buffer containing device certificate. It should be
+ *  						in .pem format.
+ *  @param[in] deviceCertBufferSize
+ *  						Size of device certificate (in bytes) pointed to by deviceCertBuffer.
+ *  @param[in] privateKeyBuffer
+ *  						Buffer containing private key. If pPassPhrase is non-NULL,
+ *  						pPassPhrase contains the passphrase from which the UDA extracts the
+ *  						key to encrypt the private key. If pPassPhrase is NULL,
+ *  						the privateKeyBuffer is not encrypted, and protecting
+ *  						it is the responsibility of the OEM.
+ *  @param[in] privateKeyBufferSize
+ *  						Size of private key in privateKeyBuffer (in bytes).
+ *  @param[in] pPassPhrase	Pointer to passphrase. It is used to decrypt the private key.
+ *  @param[in] nvStoragePath
+ *  						Optional path name of directory in which UDA can store usage data which
+ *  						should survive power down. If NULL then UDA does not store to disk.
+ *  @param[in] nvSpaceMaxBytes
+ *  						The amount of space UDA is allowed to write to disk at nvStoragePath.
+ *  						If 0 then UDA does not store to disk.
+ *  @param[in] vSpaceMaxBytes
+ *  						The amount of volatile space UDA is allowed to use for buffering usage data.
+ *  						Cannot be 0. (TBD: determine minimum) If both nonvolatile and volatile space
+ *  						is available, the UDA may choose to use only the nonvolatile.
+ *  @param[in] volatileBuffer
+ *  						Optional pointer to RAM buffer. It is used by UDA for storing usage data.
+ *  						If non-NULL, vSpaceMaxBytes gives the size. If NULL then UDA will allocate
+ *  						vSpaceMaxBytes using malloc (possibly not all in 1 block).
+ *  @param[in] languageCode	ISO 639-3 language code. It is used to specify the language the user prefers.
+ *  @param[in] configFilePath
+ *  						configuration file path, configuration file contains configurable parameters for UDA.
+ *  @param[in] messageBufferSize
+ *  						Size of messageBuffer. It is used to limit buffer overflow.
+ *  @param[out] pRetMessageBuffer
+ *  						Pointer to buffer, allocated by caller, into which a message describing the
+ *  						result of the operation is placed. This message is returned from
+ *  						the equivalent ULMUS web API, and is in the language passed to UdaInit().
+ *  @param[in] descriptionBufferSize
+ *  						Size of pRetDescriptionBuffer. It is used to limit buffer overflow
+ *  @param[out] pRetDescriptionBuffer
+ *  						Pointer to buffer, allocated by caller, into which a more detailed description
+ *  						of the result in pRetMessageBuffer is placed. The description is returned from
+ *  						the equivalent ULMUS web API, and is in the language passed to UdaInit().
+ *  @param[out] pRetCode	Pointer to where to place the code that describes the status of operation.
+ *  						This code is defined by the ULMUS web API.
+ *
+ *  @returns    status code
+ *  @retval UDA_STATUS_SUCCESS				Operation succeeded
+ *  @retval UDA_STATUS_ERR_INVALID_PARAM	Invalid parameter
+ *  @retval UDA_STATUS_FAIL					Other failure
+ *  @retval UDA_STATUS_ERR_NO_CONFIG_FILE   No config file/unable to access config file
+ *	@retval UDA_STATUS_ERR_MISSING_CONFIG_PARAM  A config parameter is not defined in config file
+ *	@retval UDA_STATUS_ERR_INVALID_CONIG_PARAM   Defined config parameter is not valid one
+ *
+ *****************************************************************************/
+UdaStatus_t UdaInit(UdaDeviceID_t deviceID, uint32_t modelGroup,
+		UdaNotificationCallback_t notificationCallback,
+		UdaErrorCallback_t errorCallback, const uint8_t *deviceCertBuffer,
+		uint32_t deviceCertBufferSize, const uint8_t *privateKeyBuffer,
+		uint32_t privateKeyBufferSize, const char *pPassPhrase,
+		const char *nvStoragePath, uint32_t nvSpaceMaxBytes,
+		uint32_t vSpaceMaxBytes, uint8_t *volatileBuffer,
+		const char *languageCode, const char *configFilePath,
+		int32_t messageBufferSize, uint8_t *pRetMessageBuffer,
+		int32_t descriptionBufferSize, uint8_t *pRetDescriptionBuffer,
+		uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This cleans up data structures and tasks of ULMUS Core.
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaTerm(void);
+
+/*****************************************************************************/
+/**
+ *  @brief This function converts a 64 bit device ID to its registration key format.
+ * A registration key is a decimal string corresponding to the unsigned numeric value
+ * of the device ID, with the addition of a check digit.
+ * We will use the UPC-A check digit algorithm as used in Universal Product Codes (UPCs):
+ * 1) Add the digits in the odd-numbered positions (first, third, fifth, etc.) together and multiply by three.
+ * 2) Add the digits in the even-numbered positions (second, fourth, sixth, etc.) to the result.
+ * 3) Find the result modulo 10 (i.e. the remainder when divided by 10.. 10 goes into 58 5 times with 8 leftover).
+ * 4) If the result is not zero, subtract the result from ten.
+ * For more information, see [UDA REGISTRATION].
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]  deviceID			64-bit globally unique device ID to be converted.
+ *  @param[in]  bufferSize			Size of buffer pointed to by pRegistrationKey.
+ *  @param[out] pRegistrationKey	Buffer to write zero terminated string
+ *  								containing registration key corresponding to device ID.
+ *
+ *  @returns	status code
+ *  @retval		UDA_STATUS_SUCCESS				Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM	Error Invalid parameter
+ *  @retval		UDA_STATUS_FAIL					Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaDeviceIdToRegistrationKey(UdaDeviceID_t deviceID,
+		int32_t bufferSize, char *pRegistrationKey);
+/*****************************************************************************/
+/**
+ *  @brief This function converts a string Registration Key to the corresponding 64-bit device ID.
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]	pRegistrationKey	Zero terminated string containing registration key corresponding to device ID.
+ *  @param[out]	pRetDeviceId		64-bit globally unique device ID.
+ *
+ *  @returns	status code
+ *  @retval		UDA_STATUS_SUCCESS				Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM	Error Invalid parameter
+ *  @retval		UDA_STATUS_FAIL					Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaRegistrationKeyToDeviceId(const char *pRegistrationKey,
+		UdaDeviceID_t *pRetDeviceId);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to get UDA Version
+ *
+ *  @param[out] pUdaVersion 				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 	                Operation succeeded
+ *  @retval	UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid parameter
+ *  @retval	UDA_STATUS_FAIL 			Operation Failed
+ *
+ *****************************************************************************/
+UdaStatus_t UdaGetVersion(char *pUdaVersion);
+
+/** @}*//* Configuration and Initialization */
+
+/**
+ *  @name Event Notifications
+ *  @{
+ **/
+/*****************************************************************************/
+/**
+ *  @brief This allows device firmware to pass event/data to ULMUS core.
+ *
+ *  This function allows the device firmware to pass an event/data to
+ *  the ULMUS device agent for storage and uploading to the cloud. The event
+ *  can be a received (but not forwarded) IR, CEC, netCLIC, or other command or
+ *  key press, or a state change.
+ *  The dataRecord must be in the format defined in [DATA FORMAT].
+ *  The dataRecord may contain multiple events, each with its own timestamp.
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in] dataRecord	Pointer to buffer containing a zero terminated string containing
+ *  						a JSON record of type dataPackage as defined in [DATA FORMAT].
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 	Error Invalid parameter
+ *  @retval		UDA_STATUS_ERR_NOT_REGISTERED	Error device not registered
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaLogData(char *dataRecord);
+
+
+/*****************************************************************************/
+/**
+ *  @brief This initializes the UDA for the application to start logging events
+ *
+ *  This function allows the UDA Application to initialize the UDA at application
+ *  side and enables it to send log events to UDA Daemon
+ *
+ *  @pre UdaAppInit() must have been called before this function.
+ *
+ *  @param[in] dataRecord	Pointer to buffer containing a zero terminated string containing
+ *  						a JSON record of type dataPackage as defined in [DATA FORMAT].
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 	Error Invalid parameter
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t udaAppInit(void);
+
+
+/*****************************************************************************/
+/**
+ *  @brief This allows UDA Application to pass event/data to UDA Daemon.
+ *
+ *  This function allows the UDA Application to pass an event/data to
+ *  the ULMUS device agent for storage and uploading to the cloud.
+ *  The dataRecord must be in the format defined in [DATA FORMAT].
+ *  The dataRecord may contain multiple events, each with its own timestamp.
+ *
+ *  @pre UdaAppInit() must have been called before this function.
+ *
+ *  @param[in] dataRecord	Pointer to buffer containing a zero terminated string containing
+ *  						a JSON record of type dataPackage as defined in [DATA FORMAT].
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 	Error Invalid parameter
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaAppLogData(char *dataRecord);
+
+
+/*****************************************************************************/
+/**
+ *  @brief This cleans up UDA at application side
+ *
+ *  @pre UdaAppInit() must have been called before this function.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS              Operation succeeded
+ *  @retval     UDA_STATUS_FAIL		            Other failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaAppTerm(void);
+
+
+/** @}*//* Event Notifications */
+
+/**
+ *  @name Web Services API's 
+ *  @{
+ **/
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to register device to ULMUS cloud
+ *
+ * This function should be called from the device firmware to register device.
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]  deviceID				64-bit globally unique device ID of ULMUS device to be registered.
+ *  @param[in]  ModelGroup				Unique number, allocated by ULMUS cloud when the model
+ *  									information is pre-registered, which identifies the manufacturer and model of the device.
+ *  @param[in]  EulaAccepted 			If true, the user accepted the EULA and agrees to allow data collection on the device.
+ *  									If false, the user rejected the EULA and does not allow data collection on the device.
+ *  @param[in]  pEulaVersion            Pointer to store EULA Version
+ *  @param[out] messageBufferSize 		Size of the message buffer that stores cloud error message
+ *  @param[out] pRetMessageBuffer 		Pointer to error message buffer that stores cloud error message
+ *  @param[out] descriptionBufferSize 	Size of the description buffer that stores cloud error description.
+ *  @param[out] pRetDescriptionBuffer 	Pointer to error description buffer that stores cloud error description.
+ *  @param[out] pRetCode 				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @returns	status code
+ *  @retval		UDA_STATUS_SUCCESS 		            Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid parameter
+ *  @retval		UDA_STATUS_FAIL 					Operation Failed
+ *
+ *****************************************************************************/
+UdaStatus_t UdaRegisterDevice(UdaDeviceID_t deviceID, uint32_t ModelGroup,
+		bool_t EulaAccepted, uint8_t *pEulaVersion, int32_t messageBufferSize,
+		uint8_t *pRetMessageBuffer, int32_t descriptionBufferSize,
+		uint8_t *pRetDescriptionBuffer, uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to deregister device from ULMUS cloud
+ *
+ * This function should be called from the device firmware to deregister device.
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]  deviceID				64-bit globally unique device ID of ULMUS device to be registered.
+ *  @param[out] messageBufferSize		Size of the message buffer that stores cloud error message
+ *  @param[out] pRetMessageBuffer		Pointer to error message buffer that stores cloud error message
+ *  @param[out] descriptionBufferSize	Size of the description buffer that stores cloud error description.
+ *  @param[out] pRetDescriptionBuffer	Pointer to error description buffer that stores cloud error description.
+ *  @param[out] pRetCode 				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 		            Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid pram
+ *  @retval		UDA_STATUS_FAIL 					Operation Failed
+ *
+ *****************************************************************************/
+UdaStatus_t UdaDeregisterDevice(UdaDeviceID_t deviceID,
+		int32_t messageBufferSize, uint8_t *pRetMessageBuffer,
+		int32_t descriptionBufferSize, uint8_t *pRetDescriptionBuffer,
+		uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to retrieve device data from ULMUS cloud
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]  deviceID 				64-bit globally unique device ID of ULMUS device
+ *  									whose data is to be retrieved.
+ *  @param[out] pRetModelGroup 			Model group of device. This is compiled into the
+ *  									device firmware, and passed to the UDA at initialization.
+ *  @param[out] pRetEulaAccepted 		If true, the user accepted the EULA and agrees
+ *  									to data collection on the device.
+ *  @param[out] pRetUploadAllowed		pointer to variable that stores upload status.
+ *  @param[out] pRetLanguageCode        pointer to 4 byte buffer that stores Language code.
+ *  @param[out] pRetUdaVersion			pointer to variable that stores current UDA version.
+ *  @param[out] messageBufferSize		Size of the message buffer that stores cloud error message
+ *  @param[out] pRetMessageBuffer		Pointer to error message buffer that stores cloud error message
+ *  @param[out] descriptionBufferSize	Size of the description buffer that stores cloud error description.
+ *  @param[out] pRetDescriptionBuffer	Pointer to error description buffer that stores cloud error description.
+ *  @param[out] pRetCode				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 		            Operation succeeded
+ *  @retval		UDA_STATUS_FAIL 					Operation Failed
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid pram
+ *
+ *****************************************************************************/
+UdaStatus_t UdaRetrieveDeviceData(UdaDeviceID_t deviceID,
+		uint32_t *pRetModelGroup, bool_t *pRetEulaAccepted,
+		bool_t *pRetUploadAllowed, char * pRetLanguageCode,
+		char *pRetUdaVersion, int32_t messageBufferSize,
+		uint8_t *pRetMessageBuffer, int32_t descriptionBufferSize,
+		uint8_t *pRetDescriptionBuffer, uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to retrieve EULA from ULMUS cloud
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]	modelGroupNumber		The Model group number of the device, which is a
+ *  									unique number allocated by the ULMUS cloud when the
+ *  									model information is pre-registered.  This is compiled
+ *  									into the device firmware, and passed to the UDA at initialization.
+ *  									associated user (if any) is to be retrieved.
+ *  @param[in]	countryCode				Country name in string
+ *  @param[in]  languageCode			pointer to ISO 639-3 language code, used to specify which language the user prefers.
+ *  @param[in]  formatRequested			File format to be retrieved.
+ *  @param[in]  filename				The full path of the filename to where to place the file.
+ *  @param[in]  eulaVersionSize         Size of eulaVersion. It is used to limit buffer overflow.
+ *  @param[out] pEulaVersion            Pointer to buffer, allocated by caller, into which a eula version is placed.
+ *  @param[out] messageBufferSize		Size of the message buffer that stores cloud error message
+ *  @param[out] pRetMessageBuffer		Pointer to error message buffer that stores cloud error message
+ *  @param[out] descriptionBufferSize	Size of the description buffer that stores cloud error description.
+ *  @param[out] pRetDescriptionBuffer	Pointer to error description buffer that stores cloud error description.
+ *  @param[out] pRetCode				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 		            Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid parameter
+ *  @retval		UDA_STATUS_FAIL 					Operation Failed
+ *
+ *****************************************************************************/
+UdaStatus_t UdaRetrieveEULA(uint32_t modelGroupNumber, const char *countryCode,
+		const char *languageCode, const char *formatRequested,
+		const char *filename, int32_t eulaVersionSize, uint8_t *pEulaVersion,
+		int32_t messageBufferSize, uint8_t *pRetMessageBuffer,
+		int32_t descriptionBufferSize, uint8_t *pRetDescriptionBuffer,
+		uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to update device data
+ *
+ *  @pre UdaInit() must have been called before this function.
+ *
+ *  @param[in]	deviceID				The globally unique device ID of the local device,
+ *  									based on MAC address or vendor ID.
+ *  @param[in]  languageCode			pointer to ISO 639-3 language code, used to specify which language the user prefers.
+ *  @param[out] messageBufferSize 		Size of the message buffer that stores cloud error message
+ *  @param[out] pRetMessageBuffer 		Pointer to error message buffer that stores cloud error message
+ *  @param[out] descriptionBufferSize	Size of the description buffer that stores cloud error description.
+ *  @param[out] pRetDescriptionBuffer	Pointer to error description buffer that stores cloud error description.
+ *  @param[out] pRetCode 				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 		            Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid parameter
+ *  @retval		UDA_STATUS_FAIL 					Operation Failed
+ *
+ *****************************************************************************/
+UdaStatus_t UdaDeviceDataUpdate(UdaDeviceID_t deviceID,
+		const char *languageCode, int32_t messageBufferSize,
+		uint8_t *pRetMessageBuffer, int32_t descriptionBufferSize,
+		uint8_t *pRetDescriptionBuffer, uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used to send the user’s response to a
+ *  question from the cloud to the cloud.
+ *
+ *  The cloud queries a user by including a 1 or 2 line question in the user's
+ *  language to the UDA after the UDA uploads data.  The question, a message ID,
+ *  and a flag indicating whether there should be a response are passed to the device
+ *  firmware via the notification callback, which is passed to the UDA via UdaInit().
+ *
+ *  If there is a question from the cloud and a response is requested, the UDA calls
+ *  the notification callback. The callback should save the parameters, notify a
+ *  different thread and return promptly.  The other thread should display the
+ *  messages to the user, request the user’s response, then call this function
+ *  (UdaSendQueryResponse) to send the response to the cloud.  The Uda will call the
+ *  Query Response web service.  The msgID parameter allows the cloud to associate
+ *  the response with the question.
+ *
+ *  @param[in]	msgID		Unique message sequence number, assigned by cloud,
+ *  						used to associate response with message.
+ *  @param[in]  response	A string, normally Y or N, containing the response
+ *  						from the user to a cloud question in the user's currently
+ *  						selected language.
+ *  @param[out] messageBufferSize 		Size of the message buffer that stores cloud error message
+ *  @param[out] pRetMessageBuffer 		Pointer to error message buffer that stores cloud error message
+ *  @param[out] descriptionBufferSize 	Size of the description buffer that stores cloud error description.
+ *  @param[out] pRetDescriptionBuffer 	Pointer to error description buffer that stores cloud error description.
+ *  @param[out] pRetCode 				Pointer to UDA error code corresponding to the cloud error.
+ *
+ *  @pre UdaInit() must have been called before this function. The notification callback
+ *  must have been called with a MsgID and expectResponse set to true. The MsgId must
+ *  not have been passed to this function previously.
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 		            Operation succeeded
+ *  @retval		UDA_STATUS_ERR_INVALID_PARAM 		Error Invalid parameter
+ *  @retval		UDA_STATUS_FAIL 					Operation Failed
+ *
+ *****************************************************************************/
+UdaStatus_t UdaSendQueryResponse(int32_t msgID, char *response,
+		int32_t messageBufferSize, uint8_t *pRetMessageBuffer,
+		int32_t descriptionBufferSize, uint8_t *pRetDescriptionBuffer,
+		uint32_t *pRetCode);
+
+/*****************************************************************************/
+/**
+ *  @brief This function is used for instant upload of data to cloud
+ *
+ *  @returns    status code
+ *  @retval     UDA_STATUS_SUCCESS 	                Operation succeeded
+ *  @retval 	UDA_STATUS_ERR_NOT_REGISTERED 		Operation Failed, Device is not registered
+ *  @retval 	UDA_STATUS_ERR_BUFFER_EMPTY 		Operation Failed, Buffer empty
+ *  @retval		UDA_STATUS_FAIL 					Other Failure
+ *
+ *****************************************************************************/
+UdaStatus_t UdaUploadData(void);
+
+/** @}*//* Web services API's */
+/** @}*/
+#ifdef __cplusplus
+}
+#endif
+#endif /* _UDA_H */

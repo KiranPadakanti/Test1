@@ -1,0 +1,16 @@
+#ifndef _VLOGMODULE_H_
+#define _VLOGMODULE_H_
+
+#include <qcc/Debug.h>
+#include <qcc/platform.h>
+#include <alljoyn/services_common/LogModulesNames.h>
+
+namespace ajn
+{
+namespace services
+{
+static char const* const QCC_MODULE = logModules::VENDOR_MODULE_LOG_NAME;
+} /* namespace services */
+} /* namespace ajn */
+
+#endif /* _VLOGMODULE_H_ */

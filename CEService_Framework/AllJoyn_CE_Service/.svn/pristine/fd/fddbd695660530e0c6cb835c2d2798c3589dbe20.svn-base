@@ -1,0 +1,351 @@
+/* =========================================================================== */
+/* */
+/* Description: */
+/*! \file */
+/*! Generic endian conversion support */
+/* */
+/* $Id: sii_endian.h 4178 2010-11-03 16:32:22Z kaiserk $ */
+/* */
+/* Comment: */
+/* */
+/* =========================================================================== */
+/* */
+/* Copyright (C) 2005-2013 by Silicon Image, Inc.  All Rights Reserved. */
+/* */
+/* This program is the Confidential and Proprietary product of Silicon Image. */
+/* This software is unpublished and remains trade secrets of Silicon Image. */
+/* Any unauthorized use, reproduction or transfer of this program is strictly */
+/* prohibited.  Do not duplicate without prior written consent of Silicon */
+/* Image, Inc. */
+/* */
+/* =========================================================================== */
+
+/*! \addtogroup MFS_LIB */
+/*! @{ */
+
+/*! \defgroup LIB_ENDIAN Endian Conversion */
+/*! \code */
+/*! #include <lib/endian.h> */
+/*! \endcode */
+/*! */
+/*! Macros for endian conversion, where the size of the conversion required */
+/*! is determined automatically (in contrast to htnl() style conversions) */
+/*! */
+/*! Clients of this facility should use BE_LD/BE_ST when the external */
+/*! format should be big endian and LE_LD/LE_ST if it should be */
+/*! little endian. */
+/*! */
+/*! It is often advisable to wrap these in subsystem-specific macros. For */
+/*! example, for a subsystem using network byte order (which is defined to be */
+/*! big endian), you might use the following definitions: */
+/*! */
+/*! \li \#define NET_LD(extVar)        BE_LD(extVar) */
+/*! \li \#define NET_ST(extVar,cpuVal) BE_ST(extVar,cpuVal) */
+/*! */
+/*! */
+/*! \note The *_LD functions use the GCC typeof() extension to ensure that the */
+/*! resulting value is of the same type as extVar. Unless you are using */
+/*! a version of the compiler with this extension (GCC version 3 or higher), */
+/*! the *_LD() macros should not be used for parameters to functions */
+/*! that take variable arguments (using varargs like printf) or those without a */
+/*! function prototype. Since the largest type that the macros can handle are */
+/*! long long (64 bits), the compiler will pass the result as *_LD as a 64 bit */
+/*! value. Assign the *_LD() results to a local variable first, or cast the */
+/*! result to the expected type. */
+/*! */
+/*! @{ */
+
+#ifndef _SIMG_ENDIAN_H_
+#define _SIMG_ENDIAN_H_
+
+/* For doxygen use only! */
+#ifdef _DEFINED_BY_DOXYGEN_ONLY_
+#define __BIG_ENDIAN__ 1
+#define __LITTLE_ENDIAN__ 0
+#endif
+
+#ifdef MFS
+#  include <hpi_types.h>
+#else
+
+#ifdef MFS
+#  include <stdint.h>
+#else
+#  include "sii_types.h"
+#endif
+
+#ifdef WIN32
+#define BYTE_ORDER LITTLE_ENDIAN
+#else
+#include <endian.h>
+#endif
+
+#if defined(__BYTE_ORDER)
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define __BIG_ENDIAN__    0
+#define __LITTLE_ENDIAN__ 1
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#define __BIG_ENDIAN__    1
+#define __LITTLE_ENDIAN__ 0
+#else
+#error "Unknown endian type"
+#endif
+
+#elif defined(BYTE_ORDER)
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+#define __BIG_ENDIAN__    0
+#define __LITTLE_ENDIAN__ 1
+#elif BYTE_ORDER == BIG_ENDIAN
+#define __BIG_ENDIAN__    1
+#define __LITTLE_ENDIAN__ 0
+#else
+#error "Unknown endian type"
+#endif
+
+
+#else
+#error "__BYTE_ORDER not defined"
+#endif
+
+#ifdef WIN32
+#define PACKED_ATTR 
+#define ALIGNED_ATTR(B)
+#else
+/* Indicates that the struct/union should be packed tightly. */
+/* This attribute must be placed before the opening brace of */
+/* the struct definition */
+#define PACKED_ATTR __attribute__((packed))
+
+/* Indicates that the struct/union/typedef should be aligned */
+/* on the given byte boundary boundary. */
+/* This attribute must be placed before the closing brace of */
+/* the struct definition. */
+#define ALIGNED_ATTR(B) __attribute__((aligned((B))))
+#endif
+#endif /* !MFS */
+
+#include "sii_bitfield.h"
+
+/* ******************************************************************* */
+/* Setup based on target byte-sex */
+/* ******************************************************************* */
+
+#if __BIG_ENDIAN__ != 0 && __LITTLE_ENDIAN__ != 0
+
+#error "Both __BIG_ENDIAN__ and __LITTLE_ENDIAN__ cannot be defined"
+
+#elif __BIG_ENDIAN__ != 0
+/* */
+/* The target is big endian; select the underlying operations appropriately. */
+/* */
+
+/*! \name Load/Store Routines */
+/*! @{ */
+
+/*! \brief Big endian load */
+/*! \param extVar External variable in big endian format */
+/*! \returns Value of \a extVar in CPU native endian format */
+#define BE_LD(extVar)           _ENDIAN_IDENT_LD(extVar)
+
+/*! \brief Big endian store */
+/*! \par Details: */
+/*! Store CPU native endian format value \a cpuVal to to external variable */
+/*! \a extVar in big endian format */
+/*! \param extVar External variable in big endian format */
+/*! \param cpuVal Value in CPU native endian format */
+/*! \returns Value of \a extVar in CPU native endian format */
+#define BE_ST(extVar,cpuVal)    _ENDIAN_IDENT_ST(extVar,cpuVal)
+
+/*! \brief Little endian load */
+/*! \param extVar External variable in little endian format */
+/*! \returns Value of \a extVar in CPU native endian format */
+#define LE_LD(extVar)           _ENDIAN_SWAP_LD(extVar)
+
+/*! \brief Little endian store */
+/*! \par Details: */
+/*! Store CPU native endian format value \a cpuVal to to external variable */
+/*! \a extVar in little endian format */
+/*! \param extVar External variable in little endian format */
+/*! \param cpuVal Value in CPU native endian format */
+/*! \returns Value of \a extVar in CPU native endian format */
+#define LE_ST(extVar,cpuVal)    _ENDIAN_SWAP_ST(extVar,cpuVal)
+
+/*! */
+/*! Given index of element based on significance (least is 0), */
+/*! return the index of the ith most significant element by location. */
+/*! */
+#define ENDIAN_INDEX(i,num)     (((num) - 1) - (i))
+
+/*! @} */
+
+/* */
+/* Conversions for constants (or values with no side-effects) */
+/* */
+
+/*! \name Conversion Macros */
+/*! \warning Values must have no side effects */
+
+/*! \returns Conversion of \a val from host CPU native format */
+/*! to 16-bit big endian format */
+#define H2BE_16(val)            _ENDIAN_IDENT(val)
+
+/*! \returns Conversion of \a val from 16-bit big endian format */
+/*! to host CPU native format */
+#define BE2H_16(val)            _ENDIAN_IDENT(val)
+
+/*! \returns Conversion of \a val from host CPU native format */
+/*! to 32-bit big endian format */
+#define H2BE_32(val)            _ENDIAN_IDENT(val)
+
+/*! \returns Conversion of \a val from 32-bit big endian format */
+/*! to host CPU native format */
+#define BE2H_32(val)            _ENDIAN_IDENT(val)
+
+/*! \returns Conversion of \a val from host CPU native format */
+/*! to 16-bit little endian format */
+#define H2LE_16(val)            _ENDIAN_SWAP16(val)
+
+/*! \returns Conversion of \a val from 16-bit little endian format */
+/*! to host CPU native format */
+#define LE2H_16(val)            _ENDIAN_SWAP16(val)
+
+/*! \returns Conversion of \a val from host CPU native format */
+/*! to 32-bit little endian format */
+#define H2LE_32(val)            _ENDIAN_SWAP32(val)
+
+/*! \returns Conversion of \a val from 32-bit little endian format */
+/*! to host CPU native format */
+#define LE2H_32(val)            _ENDIAN_SWAP32(val)
+
+/*! @} */
+
+#elif __LITTLE_ENDIAN__ != 0
+/* */
+/* The target is little endian; select the underlying operations appropriately */
+/* */
+#define BE_LD(extVar)           _ENDIAN_SWAP_LD(extVar)
+#define BE_ST(extVar,cpuVal)    _ENDIAN_SWAP_ST(extVar,cpuVal)
+#define LE_LD(extVar)           _ENDIAN_IDENT_LD(extVar)
+#define LE_ST(extVar,cpuVal)    _ENDIAN_IDENT_ST(extVar,cpuVal)
+
+/* */
+/* Given index of element based on significance (least is 0), */
+/* return the index of the ith most significant element by location. */
+/* */
+#define ENDIAN_INDEX(i,num)     (i)
+
+/* */
+/* Conversions for constants (or values with no side-effects) */
+/* */
+#define H2LE_16(val)            _ENDIAN_IDENT(val)
+#define LE2H_16(val)            _ENDIAN_IDENT(val)
+#define H2LE_32(val)            _ENDIAN_IDENT(val)
+#define LE2H_32(val)            _ENDIAN_IDENT(val)
+
+#define H2BE_16(val)            _ENDIAN_SWAP16(val)
+#define BE2H_16(val)            _ENDIAN_SWAP16(val)
+#define H2BE_32(val)            _ENDIAN_SWAP32(val)
+#define BE2H_32(val)            _ENDIAN_SWAP32(val)
+
+#else   /* !__LITTLE_ENDIAN__ and !__BIG_ENDIAN__ */
+
+#error "Either __BIG_ENDIAN__ or __LITTLE_ENDIAN__ must be defined"
+
+#endif
+
+/* Macro for retaining the original variable's type, if supported. */
+/* (Only avalilable in GCC) */
+/* */
+#if !defined(__GNUC__) || __GNUC__ < 3
+# define _ENDIAN_TYPE_CAST(x)  
+#else /* GCC */
+# define _ENDIAN_TYPE_CAST(x)  (__typeof__(x))
+#endif /* GCC */
+
+/* ******************************************************************* */
+/* Swap/no-swap macros */
+/* ******************************************************************* */
+
+/* Identity transformations for the native format */
+
+/* For 8/16/32 bit values */
+#define _ENDIAN_IDENT_ST(extVar, cpuVal)                                \
+    do {extVar = (cpuVal);} while (0)
+
+#define _ENDIAN_IDENT_LD(extVar)                (extVar)
+
+/* conversions required for non native format */
+/* Load the value from an external format to CPU format. "extVar" must be */
+/* an lval in an external structure -- the conversion size is implicitly */
+/* computed. */
+/* */
+#define _ENDIAN_SWAP_LD(extVar)  (                                                 \
+    (sizeof(extVar) == 8)   ?  _ENDIAN_TYPE_CAST(extVar) endianConvert64(extVar)   \
+    : (sizeof(extVar) == 4) ?  _ENDIAN_TYPE_CAST(extVar) endianConvert32(extVar)   \
+    : (sizeof(extVar) == 2) ?  _ENDIAN_TYPE_CAST(extVar) endianConvert16(extVar)   \
+    : (extVar)                                                                     \
+)
+
+/* Store the cpuVal to an external variable in disk format. "extVar" must be */
+/* an lval in an external structure -- the conversion size is implicitly */
+/* computed. */
+/* */
+#define _ENDIAN_SWAP_ST(extVar, cpuVal)                                 \
+    do {                                                                \
+        if (sizeof(extVar) == 8) {                                      \
+            extVar = endianConvert64(cpuVal);                           \
+        } else if (sizeof(extVar) == 4) {                               \
+            extVar = endianConvert32(cpuVal);                           \
+        } else if (sizeof(extVar) == 2) {                               \
+            extVar = endianConvert16(cpuVal);                           \
+        } else {                                                        \
+            extVar = (cpuVal);                                          \
+        }                                                               \
+    } while (0)
+
+/* */
+/* The following are only safe if 'val' has no side-effects: */
+/* Swap 16/32 or noswap (identity) macros */
+/* */
+#define _ENDIAN_SWAP16(val) ((BFE((val), 0, 8) << 8) | (BFE((val), 8, 8) << 0))
+
+#define _ENDIAN_SWAP32(val) \
+            ((BFE((val), 0, 8) << 24) | (BFE((val), 8, 8) << 16) | \
+            (BFE((val), 16, 8) << 8) | (BFE((val), 24, 8) << 0))
+
+#define _ENDIAN_IDENT(val) (val)
+
+/* ******************************************************************* */
+/* Inline functions for swapping */
+/* ******************************************************************* */
+/* */
+
+static SII_INLINE uint32_t endianConvert16(uint32_t val)
+{
+	return (_ENDIAN_SWAP16(val));
+}
+
+static SII_INLINE uint32_t endianConvert32(uint32_t val)
+{
+	return (_ENDIAN_SWAP32(val));
+}
+
+static SII_INLINE uint64_t endianConvert64(uint64_t val)
+{
+	uint32_t hiIn = bf32from64hi(val);
+	uint32_t loIn = bf32from64lo(val);
+	uint32_t hiOut;
+	uint32_t loOut;
+
+	hiOut = _ENDIAN_SWAP32(loIn);
+	loOut = _ENDIAN_SWAP32(hiIn);
+
+	return (bf32to64(hiOut, loOut));
+}
+
+#endif  /* _SIMG_ENDIAN_H_ */
+
+/*! @} LIB_ENDIAN */
+/*! @} MFS_LIB */

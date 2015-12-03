@@ -1,0 +1,65 @@
+#ifndef _VENDORCLIENT_H_
+#define _VENDORCLIENT_H_
+
+#include <alljoyn/BusAttachment.h>
+
+namespace ajn
+{
+namespace services
+{
+/**
+ * VendorClient is a helper class used by an AllJoyn IoE client application to pass send CE command
+ * to Vendor App Launcher AllJoyn IoE service applications.
+ * VendorClient enables the user of the class to interact with the remote VendorService instance exposing the following methods:
+ *  VendorSendCECommand
+ *  GetVersion
+ *
+ */
+class VendorClient: public ajn::MessageReceiver
+{
+
+public:
+	/**
+	 * VendorClient Constructor
+	 * @param  bus reference to BusAttachment
+	 */
+	VendorClient(ajn::BusAttachment& bus);
+
+	/**
+	 * Destruct VendorClient
+	 */
+	virtual ~VendorClient();
+
+	/**
+	 * Send the CE Command for specified bus name.
+	 *
+	 * @param[in] busName Unique or well-known name of AllJoyn bus
+	 * @param[in] command CEC Command to control remote device ex: PLAY
+	 * @param[in] la logical address of destination
+	 * @param[in] sessionId the session received  after joining AllJoyn session
+	 * @return ER_OK if successful.
+	 */
+	QStatus VendorSendCECommand(const char* busName, unsigned int command,
+			unsigned int la, ajn::SessionId sessionId = 0);
+
+	/**
+	 * GetVersion get the About version
+	 * @param[in] busName Unique or well-known name of AllJoyn bus
+	 * @param[in] version of the service.
+	 * @param[in] sessionId the session received  after joining AllJoyn session
+	 * @return
+	 */
+	QStatus GetVersion(const char* busName, int& version,
+			ajn::SessionId sessionId = 0);
+
+private:
+	/**
+	 * pointer to BusAttachment
+	 */
+	ajn::BusAttachment* m_BusAttachment;
+};
+
+} /* namespace services */
+} /* namespace ajn */
+
+#endif /* _VENDORCLIENT_H_ */

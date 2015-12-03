@@ -1,0 +1,65 @@
+#ifndef OPTPARSER_H_
+#define OPTPARSER_H_
+
+#include <alljoyn/about/AboutServiceApi.h>
+
+/**
+ * Class to parse arguments
+ */
+class OptParser
+{
+public:
+	enum ParseResultCode
+	{
+		PR_OK,
+		PR_EXIT_NO_ERROR,
+		PR_INVALID_OPTION,
+		PR_MISSING_OPTION,
+		PR_INVALID_APPID,
+		PR_INVALID_DEVTYPE
+	};
+
+	enum DeviceType
+	{
+		SOURCE_GEN = 1, SINK_GEN
+	};
+
+	OptParser(int argc, char** argv);
+
+	ParseResultCode ParseResult();
+
+	qcc::String GetAppId() const;
+
+	qcc::String GetAppName() const;
+
+	qcc::String GetDeviceId() const;
+
+	qcc::String GetDeviceName() const;
+
+	qcc::String GetDefaultLanguage() const;
+
+	unsigned int GetDeviceType() const;
+
+	int GetPort() const;
+
+	unsigned char GetLA() const;
+
+private:
+	int argc;
+	char** argv;
+
+	bool IsAllHex(const char* data);
+
+	void PrintUsage();
+
+	qcc::String appGUID;
+	qcc::String appName;
+	qcc::String defaultLanguage;
+	qcc::String deviceId;
+	qcc::String deviceName;
+	DeviceType deviceType;
+	unsigned int la;
+	int port;
+};
+
+#endif /* OPTPARSER_H_ */

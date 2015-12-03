@@ -1,0 +1,57 @@
+/******************************************************************************
+ *
+ * Copyright 2013, Silicon Image, Inc.  All rights reserved.
+ * No part of this work may be reproduced, modified, distributed, transmitted,
+ * transcribed, or translated into any language or computer format, in any form
+ * or by any means without written permission of: Silicon Image, Inc., 1060
+ * East Arques Avenue, Sunnyvale, California 94085
+ *
+ *****************************************************************************/
+/**
+ * @file uda_config.h
+ *
+ * @brief This file contains declarations to abstract Web services
+ *
+ *****************************************************************************/
+#include "osal.h"
+#include "platform_types.h"
+
+#ifndef _PAL_UDA_CONF_H
+#define _PAL_UDA_CONF_H
+
+/** \addtogroup UDA_CONFIG UDA config Layer
+ * @{
+ * This provides the Flexibility to changes the Web services URI
+ */
+
+/** @brief URI type codes */
+typedef enum
+{
+	GET_EULA_SERVICE_URI = 0,
+	REG_SERVICE_URI,
+	DEREG_SERVICE_URI,
+	DATA_UPLOAD_URI,
+	DEV_DATA_RETRIEVAL_URI,
+	DEV_DATA_UPDATE_URI,
+	SEND_QUERY_RESP_URI,
+	DTH_PROGRAM_CODE_URI
+} SiiUdaConfigURIType_t;
+
+/*****************************************************************************/
+/**
+ *  @brief This function returns URI string for the requested enum
+ *
+ *  @param[in]	type	URI type
+ *  @param[out]	uriStr	URI String
+ *
+ *  @returns	status code
+ *  @retval		SII_PLATFORM_STATUS_SUCCESS		Operation succeeded
+ *  @retval		SII_PLATFORM_STATUS_ERR_FAILED	Other failure
+ *
+ *****************************************************************************/
+SiiPlatformStatus_t SiiPlatformGetWebServiceURI(
+		const SiiUdaConfigURIType_t type, char* uriStr);
+
+/** @}*//* UDA config Layer */
+
+#endif /* _PAL_UDA_CONF_H */

@@ -1,0 +1,33 @@
+#ifndef _NOTIFYHANDLERIMPL_H_
+#define _NOTIFYHANDLERIMPL_H_
+
+#include <alljoyn/ce/NotifyHandler.h>
+
+namespace ajn {
+namespace services {
+/**
+ *  NotificationRegistrar is a helper class enable the Application to register NotifyHandlers to receive org.alljoyn.ce Notify signals.
+ */
+class NotificationRegistrar {
+
+  public:
+    /**
+     * RegisterNotifyHandler Registers the NotifyHandler to receive  org.alljoyn.ce Notify signals
+     * @param[in] bus reference to BusAttachment
+     * @param[in] handler reference to NotifyHandler
+     * @return status
+     */
+    static QStatus RegisterNotifyHandler(ajn::BusAttachment& bus, NotifyHandler& handler);
+
+    /**
+     * UnRegisterNotifyHandler  UnRegisters the NotifyHandler from  receiving   org.alljoyn.ce Notify signal
+     * @param[in] bus reference to BusAttachment
+     * @param[in] handler reference to NotifyHandler
+     * @return status
+     */
+    static QStatus UnRegisterNotifyHandler(ajn::BusAttachment& bus, NotifyHandler& handler);
+};
+
+} /* namespace services */
+} /* namespace ajn */
+#endif /* _NOTIFYHANDLERIMPL_H_ */

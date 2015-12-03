@@ -1,0 +1,256 @@
+#include <alljoyn/ce/CEKeyCodes.h>
+using namespace ajn;
+using namespace services;
+
+CEKeyCodes::CEKeyCodes()
+{
+}
+CEKeyCodes::~CEKeyCodes()
+{
+}
+qcc::String CEKeyCodes::CEKeycodeString(keys keycode)
+{
+	switch (keycode)
+	{
+		case CE_KEYCODE_SELECT:
+			return "CE_KEYCODE_SELECT";
+		case CE_KEYCODE_UP:
+			return "CE_KEYCODE_UP";
+		case CE_KEYCODE_DOWN:
+			return "CE_KEYCODE_DOWN";
+		case CE_KEYCODE_LEFT:
+			return "CE_KEYCODE_LEFT";
+		case CE_KEYCODE_RIGHT:
+			return "CE_KEYCODE_RIGHT";
+		case CE_KEYCODE_RIGHT_UP:
+			return "CE_KEYCODE_RIGHT_UP";
+		case CE_KEYCODE_RIGHT_DOWN:
+			return "CE_KEYCODE_RIGHT_DOWN";
+		case CE_KEYCODE_LEFT_UP:
+			return "CE_KEYCODE_LEFT_UP";
+		case CE_KEYCODE_LEFT_DOWN:
+			return "CE_KEYCODE_LEFT_DOWN";
+		case CE_KEYCODE_MENU:
+			return "CE_KEYCODE_MENU";
+		case CE_KEYCODE_SETUP_MENU:
+			return "CE_KEYCODE_SETUP_MENU";
+		case CE_KEYCODE_CONTENTS_MENU:
+			return "CE_KEYCODE_CONTENTS_MENU";
+		case CE_KEYCODE_FAVORITE_MENU:
+			return "CE_KEYCODE_FAVORITE_MENU";
+		case CE_KEYCODE_EXIT:
+			return "CE_KEYCODE_EXIT";
+		case CE_KEYCODE_NUMBER_KEY_0:
+			return "CE_KEYCODE_NUMBER_KEY_0";
+		case CE_KEYCODE_NUMBER_KEY_1:
+			return "CE_KEYCODE_NUMBER_KEY_1";
+		case CE_KEYCODE_NUMBER_KEY_2:
+			return "CE_KEYCODE_NUMBER_KEY_2";
+		case CE_KEYCODE_NUMBER_KEY_3:
+			return "CE_KEYCODE_NUMBER_KEY_3";
+		case CE_KEYCODE_NUMBER_KEY_4:
+			return "CE_KEYCODE_NUMBER_KEY_4";
+		case CE_KEYCODE_NUMBER_KEY_5:
+			return "CE_KEYCODE_NUMBER_KEY_5";
+		case CE_KEYCODE_NUMBER_KEY_6:
+			return "CE_KEYCODE_NUMBER_KEY_6";
+		case CE_KEYCODE_NUMBER_KEY_7:
+			return "CE_KEYCODE_NUMBER_KEY_7";
+		case CE_KEYCODE_NUMBER_KEY_8:
+			return "CE_KEYCODE_NUMBER_KEY_8";
+		case CE_KEYCODE_NUMBER_KEY_9:
+			return "CE_KEYCODE_NUMBER_KEY_9";
+		case CE_KEYCODE_DOT:
+			return "CE_KEYCODE_DOT";
+		case CE_KEYCODE_ENTER:
+			return "CE_KEYCODE_ENTER";
+		case CE_KEYCODE_CLEAR:
+			return "CE_KEYCODE_CLEAR";
+		case CE_KEYCODE_NEXT_FAVORITE:
+			return "CE_KEYCODE_NEXT_FAVORITE";
+		case CE_KEYCODE_CHANNEL_UP:
+			return "CE_KEYCODE_CHANNEL_UP";
+		case CE_KEYCODE_CHANNEL_DOWN:
+			return "CE_KEYCODE_CHANNEL_DOWN";
+		case CE_KEYCODE_PREVIOUS_CHANNEL:
+			return "CE_KEYCODE_PREVIOUS_CHANNEL";
+		case CE_KEYCODE_AUDIO:
+			return "CE_KEYCODE_AUDIO";
+		case CE_KEYCODE_SOURCE:
+			return "CE_KEYCODE_SOURCE";
+		case CE_KEYCODE_INFO:
+			return "CE_KEYCODE_INFO";
+		case CE_KEYCODE_HELP:
+			return "CE_KEYCODE_HELP";
+		case CE_KEYCODE_PAGE_UP:
+			return "CE_KEYCODE_PAGE_UP";
+		case CE_KEYCODE_PAGE_DOWN:
+			return "CE_KEYCODE_PAGE_DOWN";
+		case CE_KEYCODE_POWER:
+			return "CE_KEYCODE_POWER";
+		case CE_KEYCODE_VOLUME_UP:
+			return "CE_KEYCODE_VOLUME_UP";
+		case CE_KEYCODE_VOLUME_DOWN:
+			return "CE_KEYCODE_VOLUME_DOWN";
+		case CE_KEYCODE_MUTE:
+			return "CE_KEYCODE_MUTE";
+		case CE_KEYCODE_PLAY:
+			return "CE_KEYCODE_PLAY";
+		case CE_KEYCODE_STOP:
+			return "CE_KEYCODE_STOP";
+		case CE_KEYCODE_PAUSE:
+			return "CE_KEYCODE_PAUSE";
+		case CE_KEYCODE_RECORD:
+			return "CE_KEYCODE_RECORD";
+		case CE_KEYCODE_FAST_REVERSE:
+			return "CE_KEYCODE_FAST_REVERSE";
+		case CE_KEYCODE_FAST_FORWARD:
+			return "CE_KEYCODE_FAST_FORWARD";
+		case CE_KEYCODE_EJECT:
+			return "CE_KEYCODE_EJECT";
+		case CE_KEYCODE_SKIP_FORWARD:
+			return "CE_KEYCODE_SKIP_FORWARD";
+		case CE_KEYCODE_SKIP_REVERSE:
+			return "CE_KEYCODE_SKIP_REVERSE";
+		case CE_KEYCODE_STOP_RECORD:
+			return "CE_KEYCODE_STOP_RECORD";
+		case CE_KEYCODE_PAUSE_RECORD:
+			return "CE_KEYCODE_PAUSE_RECORD";
+		case CE_KEYCODE_VIDEO:
+			return "CE_KEYCODE_VIDEO";
+		case CE_KEYCODE_SUB_PICTURE:
+			return "CE_KEYCODE_SUB_PICTURE";
+		case CE_KEYCODE_VIDEO_ON_DEMAND:
+			return "CE_KEYCODE_VIDEO_ON_DEMAND";
+		case CE_KEYCODE_GUIDE:
+			return "CE_KEYCODE_GUIDE";
+		case CE_KEYCODE_TIMER_PROGRAMMING:
+			return "CE_KEYCODE_TIMER_PROGRAMMING";
+		case CE_KEYCODE_INITIAL_CONFIGURATION:
+			return "CE_KEYCODE_INITIAL_CONFIGURATION";
+		case CE_KEYCODE_PLAY_FUNCTION:
+			return "CE_KEYCODE_PLAY_FUNCTION";
+		case CE_KEYCODE_PAUSE_PLAY_FUNCTION:
+			return "CE_KEYCODE_PAUSE_PLAY_FUNCTION";
+		case CE_KEYCODE_RECORD_FUNCTION:
+			return "CE_KEYCODE_RECORD_FUNCTION";
+		case CE_KEYCODE_PAUSE_RECORD_FUNCTION:
+			return "CE_KEYCODE_PAUSE_RECORD_FUNCTION";
+		case CE_KEYCODE_STOP_FUNCTION:
+			return "CE_KEYCODE_STOP_FUNCTION";
+		case CE_KEYCODE_MUTE_FUNCTION:
+			return "CE_KEYCODE_MUTE_FUNCTION";
+		case CE_KEYCODE_RESTORE_VOLUME_FUNCTION:
+			return "CE_KEYCODE_RESTORE_VOLUME_FUNCTION";
+		case CE_KEYCODE_TUNE_FUNCTION:
+			return "CE_KEYCODE_TUNE_FUNCTION";
+		case CE_KEYCODE_SELECT_MEDIA_FUNCTION:
+			return "CE_KEYCODE_SELECT_MEDIA_FUNCTION";
+		case CE_KEYCODE_SELECT_A_V_Input_Function:
+			return "CE_KEYCODE_SELECT_A_V_Input_Function";
+		case CE_KEYCODE_SELECT_AUDIO_INPUT_FUNCTION:
+			return "CE_KEYCODE_SELECT_AUDIO_INPUT_FUNCTION";
+		case CE_KEYCODE_POWER_TOGGLE_FUNCTION:
+			return "CE_KEYCODE_POWER_TOGGLE_FUNCTION";
+		case CE_KEYCODE_POWER_OFF_FUNCTION:
+			return "CE_KEYCODE_POWER_OFF_FUNCTION";
+		case CE_KEYCODE_POWER_ON_FUNCTION:
+			return "CE_KEYCODE_POWER_ON_FUNCTION";
+		case CE_KEYCODE_F1_BLUE:
+			return "CE_KEYCODE_F1_BLUE";
+		case CE_KEYCODE_F2_RED:
+			return "CE_KEYCODE_F2_RED";
+		case CE_KEYCODE_F3_GREEN:
+			return "CE_KEYCODE_F3_GREEN";
+		case CE_KEYCODE_F4_YELLOW:
+			return "CE_KEYCODE_F4_YELLOW";
+		case CE_KEYCODE_F5:
+			return "CE_KEYCODE_F5";
+		case CE_KEYCODE_TEXT:
+			return "CE_KEYCODE_TEXT";
+		case CE_KEYCODE_AN_RETURN:
+			return "CE_KEYCODE_AN_RETURN";
+		case CE_KEYCODE_AN_CHANNEL_LIST:
+			return "CE_KEYCODE_AN_CHANNEL_LIST";
+		default:
+			return "UNKNOWN";
+	}
+}
+
+void CEKeyCodes::getKSUPfromKeyList(std::set<unsigned int> keys,
+		unsigned char * ksup)
+{
+	unsigned int setByte = 0, setBit = 0;
+	for (std::set<unsigned int>::iterator it = keys.begin(); it != keys.end();
+			++it)
+	{
+		setByte = (*it - CE_KEYCODE_SELECT) / 8;
+		setBit = (*it - CE_KEYCODE_SELECT) % 8;
+		ksup[setByte] = ksup[setByte] | (1 << setBit);
+	}
+	return;
+}
+
+void CEKeyCodes::getKeyListfromKSUP(unsigned char * ksup,
+		std::set<unsigned int> *keys)
+{
+	unsigned int ksupByte = 0, ksupBit = 0;
+
+	for (ksupByte = 0; ksupByte < 32; ksupByte++)
+	{
+		for (ksupBit = 0; ksupBit < 8; ksupBit++)
+		{
+			if (ksup[ksupByte] & (1 << ksupBit))
+			{
+				(*keys).insert(CE_KEYCODE_SELECT + ksupBit + (ksupByte * 8));
+			}
+		}
+	}
+	return;
+}
+
+void CEKeyCodes::getKeyListfromDeviceType(unsigned int deviceType,
+		std::set<unsigned int>* keys)
+{
+	/** Default control set for all devices */
+	(*keys).insert(CE_KEYCODE_UP);
+	(*keys).insert(CE_KEYCODE_DOWN);
+	(*keys).insert(CE_KEYCODE_LEFT);
+	(*keys).insert(CE_KEYCODE_RIGHT);
+	(*keys).insert(CE_KEYCODE_SELECT);
+	(*keys).insert(CE_KEYCODE_MENU);
+	(*keys).insert(CE_KEYCODE_EXIT);
+	switch (deviceType)
+	{
+		/** Control set for Source - General */
+		case 1:
+			(*keys).insert(CE_KEYCODE_PLAY);
+			(*keys).insert(CE_KEYCODE_PAUSE);
+			(*keys).insert(CE_KEYCODE_STOP);
+			(*keys).insert(CE_KEYCODE_SKIP_FORWARD);
+			(*keys).insert(CE_KEYCODE_SKIP_REVERSE);
+			(*keys).insert(CE_KEYCODE_FAST_FORWARD);
+			(*keys).insert(CE_KEYCODE_FAST_REVERSE);
+			break;
+			/** Control set for Sink - General */
+		case 2:
+			(*keys).insert(CE_KEYCODE_MUTE);
+			(*keys).insert(CE_KEYCODE_VOLUME_UP);
+			(*keys).insert(CE_KEYCODE_VOLUME_DOWN);
+			(*keys).insert(CE_KEYCODE_CHANNEL_UP);
+			(*keys).insert(CE_KEYCODE_CHANNEL_DOWN);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_0);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_1);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_2);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_3);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_4);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_5);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_6);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_7);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_8);
+			(*keys).insert(CE_KEYCODE_NUMBER_KEY_9);
+			break;
+		default:
+			break;
+	}
+}

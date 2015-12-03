@@ -1,0 +1,105 @@
+/******************************************************************************
+ *
+ * Copyright 2013, Silicon Image, Inc.  All rights reserved.
+ * No part of this work may be reproduced, modified, distributed, transmitted,
+ * transcribed, or translated into any language or computer format, in any form
+ * or by any means without written permission of: Silicon Image, Inc., 1060
+ * East Arques Avenue, Sunnyvale, California 94085
+ *
+ *****************************************************************************/
+/**
+ * @file pal_https.h
+ *
+ * @brief This file contains declarations to abstract https library
+ *
+ *****************************************************************************/
+#include "platform_types.h"
+#include "json.h"
+
+#ifndef _PAL_HTTPS_H
+#define _PAL_HTTPS_H
+
+/** \addtogroup PAL_HTTPS HTTPS Abstraction Layer
+ * @{
+ * This provides the Abstract layer for https library.
+ */
+
+typedef void * SiiPalHttpsHandle_t;
+
+/*****************************************************************************/
+/**
+ *  @brief Initialize memory and data structures for https library
+ *
+ *  @returns	status code
+ *  @retval		SII_PLATFORM_STATUS_SUCCESS		Operation succeeded
+ *  @retval		SII_PLATFORM_STATUS_ERR_FAILED	Other failure
+ *
+ *****************************************************************************/
+SiiPlatformStatus_t SiiPalHttpsInit(void);
+
+/*****************************************************************************/
+/**
+ *  @brief Terminate memory and data structures for https library
+ *
+ *  @returns	status code
+ *  @retval		SII_PLATFORM_STATUS_SUCCESS		Operation succeeded
+ *  @retval		SII_PLATFORM_STATUS_ERR_FAILED	Other failure
+ *
+ *****************************************************************************/
+SiiPlatformStatus_t SiiPalHttpsTerm(void);
+
+/*****************************************************************************/
+/**
+ *  @brief Create https connection and returns handle.
+ *
+ *  @param[out]	pRetHandle				pointer to https handle
+ *  @param[in]	pDeviceCertFilename 	device certificate file
+ *  @param[in]	pPassPhrase				Pass Phrase
+ *  @param[in]	pPrivateKeyFilename		private key file
+ *  @param[in]	pRootCaFilename			root file
+ *  @param[in]	keyType					key type
+ *
+ *  @returns	status code
+ *  @retval		SII_PLATFORM_STATUS_SUCCESS		Operation succeeded
+ *  @retval		SII_PLATFORM_STATUS_ERR_FAILED	Other failure
+ *
+ *****************************************************************************/
+SiiPlatformStatus_t SiiPalHttpsOpenConn(SiiPalHttpsHandle_t *pRetHandle,
+		char* pDeviceCertFilename, char* pPassPhrase, char* pPrivateKeyFilename,
+		char* pRootCaFilename, char* keyType);
+
+/*****************************************************************************/
+/**
+ *  @brief Invoke the webservice and returns the response in rspBuf. Caller has to free the buffer.
+ *
+ *  @param[in]	pHttpsHandle			pointer to https handle
+ *  @param[in]	method 					https method to invoke
+ *  @param[in]	msg 					msg to server
+ *  @param[in]	webServiceURI			web service URI
+ *  @param[in]	rspBuf					pointer to response buffer, allocated by caller
+ *
+ *  @returns	status code
+ *  @retval		SII_PLATFORM_STATUS_SUCCESS		Operation succeeded
+ *  @retval		SII_PLATFORM_STATUS_ERR_FAILED	Other failure
+ *
+ *****************************************************************************/
+SiiPlatformStatus_t SiiPalHttpsInvokeWebService(
+		SiiPalHttpsHandle_t *pHttpsHandle, char* method,
+		struct json_object* msg, char* webServiceURI, char** rspBuf);
+
+/*****************************************************************************/
+/**
+ *  @brief Closes https connection and returns status
+ *
+ *  @param[in]	pHttpsHandle			pointer to https handle
+ *
+ *  @returns	status code
+ *  @retval		SII_PLATFORM_STATUS_SUCCESS		Operation succeeded
+ *  @retval		SII_PLATFORM_STATUS_ERR_FAILED	Other failure
+ *
+ *****************************************************************************/
+SiiPlatformStatus_t SiiPalHttpsCloseConn(SiiPalHttpsHandle_t *pHttpsHandle);
+
+/** @}*//* PAL HTTPS Layer */
+
+#endif /* _PAL_HTTPS_H */

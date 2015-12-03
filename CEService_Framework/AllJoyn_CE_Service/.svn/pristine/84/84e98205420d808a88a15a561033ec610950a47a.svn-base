@@ -1,0 +1,27 @@
+#ifndef _LEGACYDEVICELISTENERIMPL_H_
+#define _LEGACYDEVICELISTENERIMPL_H_
+
+#include <alljoyn/ce/CEService.h>
+#include <PropertyStoreImpl.h>
+#include <CommonBusListener.h>
+
+/*
+ *
+ */
+class LegacyDeviceListenerImpl: public ajn::services::CEService::Listener
+{
+public:
+
+	LegacyDeviceListenerImpl(CommonBusListener& busListener, unsigned int la);
+
+	virtual QStatus SendCECommandCallback(unsigned int command);
+
+	~LegacyDeviceListenerImpl();
+
+private:
+
+	CommonBusListener* m_BusListener;
+	unsigned int m_la;
+};
+
+#endif /* _LEGACYDEVICELISTENERIMPL_H_ */

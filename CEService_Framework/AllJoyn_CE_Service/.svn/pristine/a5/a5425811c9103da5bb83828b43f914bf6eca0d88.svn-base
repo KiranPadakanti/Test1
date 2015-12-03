@@ -1,0 +1,64 @@
+#ifndef _NOTIFYHANDLER_H_
+#define _NOTIFYHANDLER_H_
+
+#include <map>
+#include <alljoyn/BusAttachment.h>
+
+namespace ajn {
+namespace services {
+
+/**
+ * NotifyHandler is a helper class used by an AllJoyn IoE client application to receive CEService signal notification.
+ * The user of the class need to implement   virtual void Notify(...) function
+ */
+
+class NotifyHandler : public ajn::MessageReceiver {
+
+    friend class NotificationRegistrar;
+  public:
+    /**
+     *	map of AboutData using qcc::String as key and ajn::MsgArg as value.
+     */
+    typedef std::map<qcc::String, ajn::MsgArg> ceData;
+
+    /**
+     * Construct an NotifyHandler.
+     */
+    NotifyHandler();
+
+    /**
+     * Destruct NotifyHandler
+     */
+    ~NotifyHandler();
+
+    /**
+     *
+     * @param[in] version of the CEService.
+     * @param[in] port used by the CEService
+     * @param[in] busName	well known name of the service
+     */
+    virtual void Notify(uint16_t version, uint32_t deviceType, unsigned char* ksup, const char* busName) = 0;
+
+  private:
+
+    /**
+     * NotifyHandler is a callback registered to receive AllJoyn Signal.
+     * @param[in] member
+     * @param[in] srcPath
+     * @param[in] message
+     */
+    void NotifySignalHandler(const ajn::InterfaceDescription::Member* member, const char* srcPath, ajn::Message& message);
+
+    /**
+     *	pointer to InterfaceDescription::Member
+     */
+    const ajn::InterfaceDescription::Member* notifySignalMember;
+
+};
+inline NotifyHandler::~NotifyHandler() {
+}
+
+} /* namespace services */
+} /* namespace ajn */
+
+#endif /* _NOTIFYHANDLER_H_ */

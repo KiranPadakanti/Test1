@@ -1,0 +1,103 @@
+#include <alljoyn/ce/NotificationRegistrar.h>
+#include <alljoyn/ce/LogModule.h>
+#include <qcc/Debug.h>
+
+using namespace ajn;
+using namespace services;
+
+QStatus NotificationRegistrar::RegisterNotifyHandler(ajn::BusAttachment& bus,
+		NotifyHandler& handler)
+{
+	QCC_DbgTrace(("NotifymentRegistrar::%s", __FUNCTION__));
+	QStatus status = ER_OK;
+	const InterfaceDescription* getIface = NULL;
+	getIface = bus.GetInterface("org.alljoyn.CE");
+	if (!getIface)
+	{
+		InterfaceDescription* createIface = NULL;
+		status = bus.CreateInterface("org.alljoyn.CE", createIface, false);
+		if (status != ER_OK)
+		{
+			return status;
+		}
+		if (!createIface)
+		{
+			return ER_BUS_CANNOT_ADD_INTERFACE;
+		}
+
+		status = createIface->AddMethod("SendCECommand", "u", NULL, "command");
+		if (status != ER_OK)
+		{
+			return status;
+		}
+		status = createIface->AddMethod("GetKSUP", NULL, "ay", "content");
+		if (status != ER_OK)
+		{
+			return status;
+		}
+		status = createIface->AddProperty("Version", "q", PROP_ACCESS_READ);
+		if (status != ER_OK)
+		{
+			return status;
+		}
+		status = createIface->AddProperty("DeviceType", "u",
+				(uint8_t) PROP_ACCESS_READ);
+		if (status != ER_OK)
+		{
+			return status;
+		}
+		status = createIface->AddSignal("Notify", "quay",
+				"version,deviceType,ksup", 0);
+		if (status != ER_OK)
+		{
+			return status;
+		}
+
+		createIface->Activate();
+		handler.notifySignalMember = createIface->GetMember("Notify");
+	}
+	else
+	{
+		handler.notifySignalMember = getIface->GetMember("Notify");
+	}
+
+	status =
+			bus.RegisterSignalHandler(&handler,
+					static_cast<MessageReceiver::SignalHandler>(&NotifyHandler::NotifySignalHandler),
+					handler.notifySignalMember, 0);
+	if (status != ER_OK)
+	{
+		return status;
+	}
+
+	status = bus.AddMatch(
+			"type='signal',interface='org.alljoyn.CE',member='Notify'");
+	if (status != ER_OK)
+	{
+		return status;
+	}
+
+	QCC_DbgPrintf(
+			("NotifymentRegistrar::%s result %s", __FUNCTION__, QCC_StatusText(status)));
+	return status;
+}
+
+QStatus NotificationRegistrar::UnRegisterNotifyHandler(ajn::BusAttachment& bus,
+		NotifyHandler& handler)
+{
+	QCC_DbgTrace(("NotifymentRegistrar::%s", __FUNCTION__));
+	QStatus status = ER_OK;
+
+	status =
+			bus.UnregisterSignalHandler(&handler,
+					static_cast<MessageReceiver::SignalHandler>(&NotifyHandler::NotifySignalHandler),
+					handler.notifySignalMember, NULL);
+	if (status != ER_OK)
+	{
+		return status;
+	}
+
+	QCC_DbgPrintf(
+			("NotifymentRegistrar::%s result %s", __FUNCTION__, QCC_StatusText(status)));
+	return status;
+}

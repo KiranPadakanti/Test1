@@ -1,0 +1,78 @@
+#ifndef _CECLIENT_H_
+#define _CECLIENT_H_
+
+#include <alljoyn/BusAttachment.h>
+
+namespace ajn {
+namespace services {
+/**
+ * CEClient is a helper class used by an AllJoyn IoE client application to send CE command
+ * and receive notifications from nearby AllJoyn IoE service applications.
+ * CEClient enables the user of the class to interact with the remote CEService instance exposing the following methods:
+ *  SendCECommand
+ *  GetVersion
+ *
+ */
+class CEClient : public ajn::MessageReceiver {
+
+  public:
+    /**
+     * CEClient Constructor
+     * @param  bus reference to BusAttachment
+     */
+    CEClient(ajn::BusAttachment& bus);
+
+    /**
+     * Destruct CEClient
+     */
+    virtual ~CEClient();
+
+    /**
+     * Send the CE Command for specified bus name.
+     *
+     * @param[in] busName Unique or well-known name of AllJoyn bus
+     * @param[in] command CEC Command to control remote device ex: PLAY
+     * @param[in] sessionId the session received  after joining AllJoyn session
+     * @return ER_OK if successful.
+     */
+    QStatus SendCECommand(const char* busName, unsigned int command, ajn::SessionId sessionId = 0);
+
+
+    /**
+     * GetVersion get the About version
+     * @param[in] busName Unique or well-known name of AllJoyn bus
+     * @param[in] version of the service.
+     * @param[in] sessionId the session received  after joining AllJoyn session
+     * @return
+     */
+    QStatus GetVersion(const char* busName, int& version, ajn::SessionId sessionId = 0);
+
+    /**
+     * GetDeviceType get the device type
+     * @param[in] busName Unique or well-known name of AllJoyn bus
+     * @param[in] deviceType
+     * @param[in] sessionId the session received  after joining AllJoyn session
+     * @return
+     */
+    QStatus GetDeviceType(const char* busName, unsigned int& deviceType, ajn::SessionId sessionId = 0);
+
+    /**
+     * GetKSUP get the device type
+     * @param[in] busName Unique or well-known name of AllJoyn bus
+     * @param[in] kSUP
+     * @param[in] sessionId the session received  after joining AllJoyn session
+     * @return
+     */
+    QStatus GetKSUP(const char* busName, uint8_t* content, size_t& contentSize, ajn::SessionId sessionId);
+
+  private:
+    /**
+     * pointer to BusAttachment
+     */
+    ajn::BusAttachment* m_BusAttachment;
+};
+
+} /* namespace services */
+} /* namespace ajn */
+
+#endif /* _CECLIENT_H_ */

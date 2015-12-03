@@ -1,0 +1,27 @@
+#ifndef _CESERVICELISTENERIMPL_H_
+#define _CESERVICELISTENERIMPL_H_
+
+#include <alljoyn/vendor/VendorService.h>
+#include <PropertyStoreImpl.h>
+#include <CommonBusListener.h>
+
+/*
+ *
+ */
+class VendorServiceListenerImpl: public ajn::services::VendorService::Listener
+{
+public:
+
+	VendorServiceListenerImpl(CommonBusListener& busListener);
+
+	virtual QStatus VendorSendCECommandCallback(unsigned int command,
+			unsigned int la);
+
+	~VendorServiceListenerImpl();
+
+private:
+
+	CommonBusListener* m_BusListener;
+};
+
+#endif /* _CESERVICELISTENERIMPL_H_ */

@@ -1,0 +1,19 @@
+# pack-refs with: peeled 
+fecc309b69eec9ae1c0ed9d66a5aca71c963de3c refs/remotes/origin/RB14.02
+efbec7f94d617ba343551e9d4ae0350f6a267760 refs/remotes/origin/feature/ns_enhancements
+c3cfa363c41f484ee5b724c94e56ab5142c44709 refs/remotes/origin/legacy-03.04.00
+03fa5d0941bd79075d89b9fd66590c541fc8ac12 refs/remotes/origin/master
+e02fb710c0f70ff39a092939d99c39fb3bc18560 refs/tags/legacy-03.04.05-generated
+^99fc2f98f521a6cdbe434f27aa57a4e123dc3991
+d5431f2f259e7cc134cf43688bd87477ed5a8447 refs/tags/legacy-03.04.05-generated-2
+^9379f2e64fac5587f19471b78d3d6c0c5004cfae
+efa6fa3efb62548911590b6e5055fcb04fd8ed62 refs/tags/legacy-03.04.06
+^047a3e748c1cdd6f4e0225debbc656541cf1b72c
+9cb03523041278729d8c2b02ec3c561d9086643e refs/tags/legacy-03.04.06-generated
+^74cccd31a7d4f7063e1d40113eb7cfdbb39bb765
+20c14831dd05ed64601bc0479ac0dcaf096c32f9 refs/tags/legacy-3.4.6-generated-2
+^74cccd31a7d4f7063e1d40113eb7cfdbb39bb765
+9d41b16d36611cf2c2edbd4d47599d4a03d82b82 refs/tags/v14.02
+^344a451ae929b9f4d5e68fb7e92b44080d6b849a
+1a66003e171db785701776409114b6c80f4bad6e refs/tags/v14.02-generated
+^7c68d921d61d40da371e268b024c9635b4d40552

@@ -1,0 +1,387 @@
+/* =========================================================================== */
+/*  */
+/* Description: */
+/*! \file */
+/*! Bitfield manipulation routines */
+/*  */
+/* $Id: sii_bitfield.h 41 2010-02-06 01:24:40Z thuang $ */
+/*  */
+/* Comment: */
+/* These routines are chosen so that the compiler will map them */
+/* to the specialized instructions for the Pico processor, depending */
+/* on processor generation. */
+/*  */
+/* =========================================================================== */
+/*  */
+/* Copyright (C) 2004-2013 by Silicon Image, Inc.  All Rights Reserved. */
+/*  */
+/* This program is the Confidential and Proprietary product of Silicon Image. */
+/* This software is unpublished and remains trade secrets of Silicon Image. */
+/* Any unauthorized use, reproduction or transfer of this program is strictly */
+/* prohibited.  Do not duplicate without prior written consent of Silicon */
+/* Image, Inc. */
+/*  */
+/* =========================================================================== */
+
+/*! \defgroup MFS_LIB MFS Library */
+/*! The MFS Library provides a variety of system services  */
+/*! and utility routines. */
+/*! @{ */
+
+/*! \defgroup LIB_BITFIELD Bitfield Manipulation Package */
+/*! \code */
+/*! #include <lib/bitfield.h> */
+/*! \endcode */
+/*!  */
+/*! These routines are designed to allow efficient manipulation of bit fields */
+/*! within 32 bit integers. The implementations are designed so that the */
+/*! compiler will map them to the specialized instructions for the Pico */
+/*! processor, depending on processor generation. */
+/*! */
+/*! \note */
+/*! An application can set the MFS_LIB_FFS_MOD control in the Makefile to */
+/*! 'yes' to improve the performance of the ffs() and findMSB() functions. */
+/*! This flag places a data table used by the functions into an instance */
+/*! record. Otherwise, a normal 'C' array is used, resulting in slightly */
+/*! larger and slower code. */
+/*! */
+/*! \sa */
+/*! \ref KERN_CONFIG */
+/*! */
+/*! @{ */
+
+#ifndef _BITFIELD_H_
+#define _BITFIELD_H_
+
+#ifdef MFS
+#  include <hpi_types.h>
+#endif
+
+#ifdef MFS
+/* #  include <stdint.h> */
+#else
+#  include "sii_types.h"
+#  include "sii_inline.h"
+#endif
+
+/* ***************************************************************** */
+/* Macros */
+/*  */
+
+/* ===================================================================== */
+/* Generic, machine independent definitions of bitfield macros */
+
+/* Generic extract */
+#define _GENERIC_BFE(src, bitpos, width)                                \
+    (((uint32_t)(src) << (32 - (bitpos) - (width))) >> (32 - (width)))
+
+/* Generic insert (or) */
+#define _GENERIC_BFI(src1, src2, offset) ((src1) | ((src2) << (offset)))
+
+/* Generic exchange */
+#define _GENERIC_BFX(src1, src2, offset) ((src1) ^ ((src2) << (offset)))
+
+/* Generic clear */
+#define _GENERIC_BFC(src, bitpos, width) \
+    ((src) & (~(((uint32_t)(~0) >> (32 - (width))) << (bitpos))))
+
+/* Generic set */
+#define _GENERIC_BFS(src, bitpos, width, val)                           \
+    _GENERIC_BFI(_GENERIC_BFC((src), (bitpos), (width)),                \
+        _GENERIC_BFE((val), 0, (width)), (bitpos))
+
+/* ===================================================================== */
+/* Get cpu specific optimizations, if any */
+#ifdef MFS
+#include <hpi_opt.h>
+#endif
+
+/* ===================================================================== */
+/* Define all versions not specified in hpi_opt.h */
+
+#if !defined(BFE)
+/*! \brief BitField Extract */
+/*! \par Details: */
+/*! Extract \a width bits from \a src starting at \a bitpos */
+/*! \param src 32-bit input bitfield */
+/*! \param bitpos Starting bit position */
+/*! \param width Number of bits to extract */
+/*! \returns Extracted sub-bitfield */
+/*! \note Use constant/immediate values for \a width and \a bitpos in order */
+/*! to generate specialized instructions when possible */
+#define BFE(src, bitpos, width) _GENERIC_BFE(src, bitpos, width)
+#endif /* !defined(BFE) */
+
+#if !defined(BFI)
+/*! \brief BitField Insert */
+/*! \par Details: */
+/*! Shift \a src2 by \a offset bits and combine with \a src1 */
+/*! \param src1 32-bit input bitfield */
+/*! \param src2 32-bit input bitfield */
+/*! \param offset Number of bits to shift \a src2 */
+/*! \returns Combined bitfield */
+/*! \note Use a constant/immediate value for \a offset in order to generate */
+/*! specialized instructions when possible */
+#define BFI(src1, src2, offset) _GENERIC_BFI(src1, src2, offset)
+#endif /* !defined(BFI) */
+
+#if !defined(BFX)
+/*! \brief BitField eXchange */
+/*! \par Details: */
+/*! Shift \a src2 by \a offset bits and xor with \a src1 */
+/*! \param src1 32-bit input bitfield */
+/*! \param src2 32-bit input bitfield */
+/*! \param offset Number of bits to shift \a src2 */
+/*! \returns Combined bitfield */
+/*! \note Use a constant/immediate value for \a offset in order to generate */
+/*! specialized instructions when possible */
+#define BFX(src1, src2, offset) _GENERIC_BFX(src1, src2, offset)
+#endif /* !defined(BFX) */
+
+#if !defined(BFC)
+/*! \brief BitField Clear */
+/*! \par Details: */
+/*! Zero \a width bits from \a src starting at \a bitpos */
+/*! \param src 32-bit input bitfield */
+/*! \param bitpos Starting bit position */
+/*! \param width Number of bits to clear */
+/*! \returns Updated bitfield */
+/*! \note Use constant/immediate values for \a width and \a bitpos in order */
+/*! to generate specialized instructions when possible */
+#define BFC(src, bitpos, width) _GENERIC_BFC(src, bitpos, width)
+#endif /* !defined(BFC) */
+
+#if !defined(BFS)
+/*! \brief BitField Set */
+/*! \par Details: */
+/*! Set \a width bits from \a src starting at \a bitpos to */
+/*! the value \a val */
+/*! \param src 32-bit input bitfield */
+/*! \param bitpos Starting bit position */
+/*! \param width Number of bits to set */
+/*! \param val Value to store in sub-bitfield */
+/*! \returns Updated bitfield */
+/*! \note Use constant/immediate values for \a width and \a bitpos in order */
+/*! to generate specialized instructions when possible */
+#define BFS(src, bitpos, width, val) _GENERIC_BFS(src, bitpos, width, val)
+#endif /* !defined(BFS) */
+
+/* ===================================================================== */
+/* Define constant versions */
+
+/*! \brief BitField Extract -- constant operands */
+/*! \par Details: */
+/*! Extract \a width bits from \a src starting at \a bitpos */
+/*! \param src 32-bit input bitfield */
+/*! \param bitpos Starting bit position */
+/*! \param width Number of bits to extract */
+/*! \returns Extracted sub-bitfield */
+/*! \warning This macro is only appropriate to use when all parameters are */
+/*! constant. For example, it may be used in a data structure initialization. */
+#define BFE_CONST(src, bitpos, width) _GENERIC_BFE(src, bitpos, width)
+
+/*! \brief BitField Insert -- constant operands */
+/*! \par Details: */
+/*! Shift \a src2 by \a offset bits and combine with \a src1 */
+/*! \param src1 32-bit input bitfield */
+/*! \param src2 32-bit input bitfield */
+/*! \param offset Number of bits to shift \a src2 */
+/*! \returns Combined bitfield */
+/*! \warning This macro is only appropriate to use when all parameters are */
+/*! constant. For example, it may be used in a data structure initialization. */
+#define BFI_CONST(src1, src2, offset) _GENERIC_BFI(src1, src2, offset)
+
+/*! \brief BitField eXchange -- constant operands */
+/*! \par Details: */
+/*! Shift \a src2 by \a offset bits and xor with \a src1 */
+/*! \param src1 32-bit input bitfield */
+/*! \param src2 32-bit input bitfield */
+/*! \param offset Number of bits to shift \a src2 */
+/*! \returns Combined bitfield */
+/*! \warning This macro is only appropriate to use when all parameters are */
+/*! constant. For example, it may be used in a data structure initialization. */
+#define BFX_CONST(src1, src2, offset) _GENERIC_BFX(src1, src2, offset)
+
+/*! \brief BitField Clear -- constant operands */
+/*! \par Details: */
+/*! Zero \a width bits from \a src starting at \a bitpos */
+/*! \param src 32-bit input bitfield */
+/*! \param bitpos Starting bit position */
+/*! \param width Number of bits to clear */
+/*! \returns Updated bitfield */
+/*! \warning This macro is only appropriate to use when all parameters are */
+/*! constant. For example, it may be used in a data structure initialization. */
+#define BFC_CONST(src, bitpos, width) _GENERIC_BFC(src, bitpos, width)
+
+/*! \brief BitField Set -- constant operands */
+/*! \par Details: */
+/*! Set \a width bits from \a src starting at \a bitpos to */
+/*! the value \a val */
+/*! \param src 32-bit input bitfield */
+/*! \param bitpos Starting bit position */
+/*! \param width Number of bits to set */
+/*! \param val Value to store in sub-bitfield */
+/*! \returns Updated bitfield */
+/*! \warning This macro is only appropriate to use when all parameters are */
+/*! constant. For example, it may be used in a data structure initialization. */
+#define BFS_CONST(src, bitpos, width, val) _GENERIC_BFS(src, bitpos, width, val)
+
+/* ===================================================================== */
+/* ffs and findMSB support. */
+
+/* This is the magic table definition for ffs and findMSB() */
+/**/
+#define _FFS_TABLE                                                      \
+{                                                                       \
+    0,  1,  2, 13,  3,  7,  0, 14,  4,  0,  8,  0,  0,  0,  0, 15,      \
+    11, 5,  0,  0,  9,  0,  0, 26,  0,  0,  0,  0,  0, 22, 28, 16,      \
+    32, 12, 6,  0,  0,  0,  0,  0, 10,  0,  0, 25,  0,  0, 21, 27,      \
+    31,  0,  0, 0,  0, 24,  0, 20, 30,  0, 23, 19, 29, 18, 17,  0       \
+}
+
+#define FFS_TABLE_SZ 64
+
+/* ***************************************************************** */
+/* Data structure declarations */
+/*  */
+
+/* Union for efficient 32 bit <-> 64 bit conversions. */
+typedef union
+{
+	struct
+	{
+#if defined(__BIG_ENDIAN__) && __BIG_ENDIAN__ != 0
+	uint32_t high;
+	uint32_t low;
+#elif defined(__LITTLE_ENDIAN__) && __LITTLE_ENDIAN__ != 0
+	uint32_t low;
+	uint32_t high;
+#else
+#error "Either __BIG_ENDIAN__ or __LITTLE_ENDIAN__ must be defined"
+#endif
+	} v32;
+	uint64_t v64;
+} _bf32to64_t;
+
+/* This is used for ffs() findMSB(), unless the hash table is in the */
+/* sysrec */
+/**/
+extern char ffsTable[FFS_TABLE_SZ];
+
+/* ***************************************************************** */
+/* Inlines */
+/*  */
+
+/* ******************************************************************* */
+/*! \brief Extract the high 32 bits of a 64 bit value */
+/*! \par Details: */
+/*! More efficient extraction of the high 32 bits of a 64 bit value */
+/*! \param val 64-bit value to extract the 32 bit value from */
+/*! \returns The most significant 32 bits of val */
+static SII_INLINE uint32_t bf32from64hi(uint64_t val)
+{
+	_bf32to64_t tmp;
+	tmp.v64 = val;
+	return (tmp.v32.high);
+}
+
+/* ******************************************************************* */
+/*! \brief Extract the low 32 bits of a 64 bit value */
+/*! \par Details: */
+/*! More efficient extraction of the low 32 bits of a 64 bit value */
+/*! \param val 64-bit value to extract the 32 bit value from */
+/*! \returns The least significant 32 bits of val */
+static SII_INLINE uint32_t bf32from64lo(uint64_t val)
+{
+	return ((uint32_t) val);
+}
+
+/* ******************************************************************* */
+/*! \brief Combine two 32 bit values into a 64 bit value */
+/*! \par Details: */
+/*! More efficient combination of two 32 bit values to form a 64 bit value */
+/*! \param hi the most significant 32 bits of the 64 bit result */
+/*! \param lo the least significant 32 bits of the 64 bit result */
+/*! \returns The combined 64 bit value */
+static SII_INLINE uint64_t bf32to64(uint32_t hi, uint32_t lo)
+{
+	_bf32to64_t tmp;
+	tmp.v32.high = hi;
+	tmp.v32.low = lo;
+	return (tmp.v64);
+}
+
+/* ******************************************************************* */
+/*! \brief 64-bit logical right shift */
+/*! \par Details: */
+/*! More efficient right shift of 64 bit value when the shift amount */
+/*! is known to be less than 32. (Useful for lba calculations.) */
+/*! NB: could use asm(). */
+/*! \param val 64-bit value to right shift */
+/*! \param shift Number of bits by which to shift */
+/*! \returns Resulting bitfield */
+static SII_INLINE uint64_t lsr64(uint64_t val, int shift)
+{
+	uint32_t l32 = bf32from64lo(val);
+	uint32_t h32 = bf32from64hi(val);
+
+	l32 = (l32 >> shift) | (h32 << (32 - shift));
+	h32 >>= shift;
+	val = bf32to64(h32, l32);
+	return (val);
+}
+
+/* ******************************************************************* */
+/*! \brief 64-bit logical left shift */
+/*! \par Details: */
+/*! More efficient left shift of 64 bit value when the shift amount */
+/*! is known to be less than 32. (Useful for lba calculations.) */
+/*! NB: could use asm(). */
+/*! \param val 64-bit value to left shift */
+/*! \param shift Number of bits by which to shift */
+/*! \returns Resulting bitfield */
+static SII_INLINE uint64_t lsl64(uint64_t val, int shift)
+{
+	uint32_t l32 = bf32from64lo(val);
+	uint32_t h32 = bf32from64hi(val);
+
+	h32 = (h32 << shift) | (l32 >> (32 - shift));
+	l32 <<= shift;
+	val = bf32to64(h32, l32);
+	return (val);
+}
+
+/* ***************************************************************** */
+/* Function prototypes */
+/*  */
+
+/*! \brief */
+/*! Find first set bit -- compatible with Berkeley/Linux ffs(). */
+/*! */
+/*! \param i an integer value */
+/*! \returns the bit number of the least significant bit set in */
+/*! 'i', numbering from 1 to 32, or zero if no bits */
+/*! are set in i. */
+/*! */
+int ffs(const int i);
+
+/*! \brief */
+/*! Find most significant bit set */
+/*!  */
+/*! \param i an integer value */
+/*! \returns the bit number of the most significant bit set in */
+/*! 'i', numbering from 1 to 32, or zero if no bits */
+/*! are set in i. */
+/*!  */
+/*! \note */
+/*! set the MFS_LIB_FFS_MOD build control to 'yes' for efficient access */
+/*! to the data structure used by ffs()/findMSB() */
+/*! */
+int findMSB(const int i);
+
+/* ******************************************************************* */
+
+#endif  /* _BITFIELD_H_ */
+
+/*! @} LIB_BITFIELD */
+/*! @} MFS_LIB */

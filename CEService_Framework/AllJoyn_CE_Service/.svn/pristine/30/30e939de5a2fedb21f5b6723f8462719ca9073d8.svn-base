@@ -1,0 +1,73 @@
+#include "LegacyDeviceListenerImpl.h"
+#include <alljoyn/ce/CEKeyCodes.h>
+#include <alljoyn/vendor/VendorClient.h>
+
+#include "sii_types.h"
+#include "json.h"
+#include "uda.h"
+
+#include <iostream>
+
+#define JSON_BUFFER 32
+#define SEND_CMD "{ \"OPCODE\" : \"EVENT\", \"TYPE\" : \"CEC_COMMAND\" }"
+
+using namespace ajn;
+using namespace services;
+
+extern BusAttachment* msgBus;
+extern qcc::String vendorBusName;
+extern ajn::SessionId vendorSessionId;
+LegacyDeviceListenerImpl::LegacyDeviceListenerImpl(CommonBusListener& busListener,
+		unsigned int la) :
+		CEService::Listener(), m_BusListener(&busListener), m_la(la)
+{
+}
+
+QStatus LegacyDeviceListenerImpl::SendCECommandCallback(unsigned int command)
+{
+	msgBus->EnableConcurrentCallbacks();
+	char buf[JSON_BUFFER];
+	struct json_object *sendJsonMesg;
+	time_t rawtime;
+	struct tm *timeinfo;
+	unsigned int deviceId = 123;
+
+	rawtime = time(NULL);
+	timeinfo = localtime(&rawtime);
+	VendorClient* vendorClient = NULL;
+	vendorClient = new VendorClient(*msgBus);
+
+	CEKeyCodes ceKeycodes = CEKeyCodes();
+	std::cout << "Received Command "
+			<< ceKeycodes.CEKeycodeString((CEKeyCodes::keys) command).c_str()
+			<< "(0x" << std::hex << command << ")" << std::endl;
+	std::cout << "Logical Address: " << m_la << std::endl;
+
+	vendorClient->VendorSendCECommand(vendorBusName.c_str(),
+			(unsigned int) command, (unsigned int) m_la, vendorSessionId);
+
+	sendJsonMesg = json_tokener_parse(SEND_CMD);
+
+	sprintf(buf, "\"%x\"", command);
+	json_object_object_add(sendJsonMesg, "COMMAND", json_tokener_parse(buf));
+
+	sprintf(buf, "\"%x\"", deviceId);
+	json_object_object_add(sendJsonMesg, "USERID", json_tokener_parse(buf));
+
+	/* Adding logEvent time to place holder */
+	strftime(buf, JSON_BUFFER, "\"%Y%m%d%H%M%S000\"", timeinfo);
+	json_object_object_add(sendJsonMesg, "TIME", json_tokener_parse(buf));
+
+	if (UdaAppLogData((char *) json_object_to_json_string(sendJsonMesg))
+			!= UDA_STATUS_SUCCESS)
+	{
+		std::cout << "UdaLogData() failed \n" << std::endl;
+	}
+
+	return ER_OK;
+}
+
+LegacyDeviceListenerImpl::~LegacyDeviceListenerImpl()
+{
+
+}

@@ -1,0 +1,52 @@
+/******************************************************************************
+ *
+ * Copyright 2008-2013, Silicon Image, Inc.  All rights reserved.
+ * No part of this work may be reproduced, modified, distributed, transmitted,
+ * transcribed, or translated into any language or computer format, in any form
+ * or by any means without written permission of: Silicon Image, Inc., 1060
+ * East Arques Avenue, Sunnyvale, California 94085
+ *
+ *****************************************************************************/
+/**
+ * @file config.h
+ *
+ * @brief Configuration file
+ *
+ * These are ULMUS Configuration macros
+ *
+ *
+ *****************************************************************************/
+#ifndef _ULMUS_CONF_H
+#define _ULMUS_CONF_H
+
+/** UDA Version */
+#define UDA_VERSION "1.1"
+/** Max Len of UDA Version */
+#define UDA_VERSION_LENGTH 8
+#define DTH_CHANNELCODE_LENGTH 8
+
+/** ULMUS Task Priority */
+#define ULMUS_TASK_PRIORITY     5
+
+/** Initial retry period for device registration */
+#define UDA_REGISTER_DEVICE_INITIAL_RETRY_PERIOD_SECONDS		(3600)
+/** Max retry period for device registration */
+#define UDA_REGISTER_DEVICE_MAX_RETRY_PERIOD_SECONDS		(24*3600)
+
+/** Initial retry period for device de-registration */
+#define UDA_DEREGISTER_DEVICE_INITIAL_RETRY_PERIOD_SECONDS		(3600)
+/** Max retry period for device de-registration */
+#define UDA_DEREGISTER_DEVICE_MAX_RETRY_PERIOD_SECONDS		(24*3600)
+
+/** Retry period for device verification */
+#define UDA_VERIFY_DEVICE_RETRY_PERIOD_SECONDS			(24*3600)
+
+/** Initial retry period for data upload */
+#define UDA_UPLOAD_DATA_INITIAL_RETRY_PERIOD_SECONDS		(3600)
+/** Max retry period for data upload */
+#define UDA_UPLOAD_DATA_MAX_RETRY_PERIOD_SECONDS		(24*3600)
+
+/** Min period for scheduled upload */
+#define UDA_SCHED_TIME_MIN_PERIOD_SECONDS		(3600)
+
+#endif /* _ULMUS_CONF_H */
